@@ -5,8 +5,8 @@ app = Flask(__name__)
 
 app.config['JSON_AS_ASCII'] = False
 app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'admin'
-app.config['MYSQL_PASSWORD'] = 'admin'
+app.config['MYSQL_USER'] = 'admin'  #root
+app.config['MYSQL_PASSWORD'] = 'admin' #root
 app.config['MYSQL_DB'] = 'vinarija'
 
 mysql = MySQL(app)
