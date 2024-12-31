@@ -12,14 +12,15 @@ CREATE TABLE Skladiste_proizvod (
     FOREIGN KEY (id_proizvod) REFERENCES Proizvod(id)
 );
 
-CREATE TABLE Zahtjev_za_nabavu (
-    id INT PRIMARY KEY,
-    id_kupac INT,
-    id_zaposlenik INT,
-    datum_zahtjeva DATETIME,
-    ukupni_iznos DECIMAL(10, 2),
-    status_zahtjeva VARCHAR(30),
-    FOREIGN KEY (id_kupac) REFERENCES Kupac(id),
+
+    CREATE TABLE Zahtjev_za_nabavu (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_Repromaterijal INT NOT NULL,
+    kolicina INT NOT NULL,
+    datum_zahtjeva DATETIME NOT NULL,
+    status ENUM('u obradi', 'odobreno', 'odbijeno') NOT NULL,
+    id_zaposlenik INT NOT NULL,
+    FOREIGN KEY (id_Repromaterijal) REFERENCES Repromaterijal(id),
     FOREIGN KEY (id_zaposlenik) REFERENCES Zaposlenik(id)
 );
 
