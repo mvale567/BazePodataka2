@@ -24,9 +24,7 @@ body {
 .header {
     position: fixed;
     height: 4rem;
-    left: .5rem;
-    right: .5rem;
-    top: 1rem;
+    width: 100%;
     background: rgb(237, 237, 237, 0.1);
     backdrop-filter: blur(30px);
     display: flex;
@@ -35,24 +33,19 @@ body {
     z-index: 9999;
     transition: background-color 0.4s ease-in-out;
     box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.9);
-    border-radius: 10px;
-
 
     .header__logo {
-        margin-left: 3.7rem;
+        margin-left: 30px;
         animation: slideRight 1.5s ease forwards;
         color: #fff;
         display: block;
         transition: transform 0.3s ease;
         text-decoration: none;
-        font-size: 1.2rem;
+        font-size: 23px;
 
-
-        &:hover {
+        /* &:hover {
             transform: scale(1.2);
-        }
-
-
+        } */
     }
 }
 
@@ -79,7 +72,7 @@ body {
         animation: slideBottom 1.5s ease forwards;
 
         &:hover {
-            color: rgb(161, 115, 7);
+            color: rgb(4, 30, 55);
         }
     }
 }
@@ -106,7 +99,7 @@ body {
     width: 100%;
     height: 100%;
     background-color: #00aaff;
-    padding-top: 50px;
+    padding-top: 80px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -141,7 +134,7 @@ body {
 }
 
 .nav-button:hover {
-    background-color: #17407d;
+    background-color: #041e37;
 }
 
 .nav-button i {
@@ -189,7 +182,9 @@ body {
     overflow: hidden;
     background-image: url("/static/images/erp-8012426_1920.png");
     background-size: cover;
-    background-position: right;
+    background-position: 150%;
+    justify-content: center;
+    align-items: center;
 
 }
 
