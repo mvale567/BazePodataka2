@@ -1,8 +1,35 @@
 DROP DATABASE IF EXISTS vinarija;
 CREATE DATABASE vinarija;
 USE vinarija;
+---------------------------------------Danijel
+CREATE TABLE Kupac (
+    id INT PRIMARY KEY,
+    naziv VARCHAR(100) NOT NULL,
+    oib CHAR(11) UNIQUE NOT NULL,
+    ime VARCHAR(50) NOT NULL,
+    prezime VARCHAR(50) NOT NULL,
+    adresa VARCHAR(100),
+    email VARCHAR(100),
+    telefon VARCHAR(20)
+);
 
+CREATE TABLE Odjel (
+    id INT PRIMARY KEY,
+    naziv VARCHAR(100) NOT NULL,
+    broj_zaposlenika INT CHECK (broj_zaposlenika >= 0)
+);
 
+CREATE TABLE Zaposlenik (
+    id INT PRIMARY KEY,
+    id_odjel INT NOT NULL,
+    ime VARCHAR(50) NOT NULL,
+    prezime VARCHAR(50) NOT NULL,
+    adresa VARCHAR(100),
+    email VARCHAR(100),
+    telefon VARCHAR(20),
+    datum_zaposlenja DATE NOT NULL,
+    status_zaposlenika ENUM('aktivan', 'neaktivan') NOT NULL,
+    FOREIGN KEY (id_odjel) REFERENCES Odjel(id)
 ----------------------------------------------------- VID
 CREATE TABLE skladiste_proizvod (
     id INT PRIMARY KEY,
