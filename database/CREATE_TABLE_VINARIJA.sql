@@ -115,7 +115,7 @@ CREATE TABLE transport (
 	datum_polaska DATETIME NOT NULL,
 	datum_dolaska DATETIME NOT NULL,
 	kolicina CHAR(11) UNIQUE,
-	status_transporta ENUM('Obavljen', 'Otkazan') NOT NULL
+	status_transporta ENUM('Obavljen', 'Otkazan') NOT NULL,
 	FOREIGN KEY (id_prijevoznik) REFERENCES prijevoznik(id)
 );
 
@@ -161,6 +161,36 @@ CREATE TABLE repromaterijal (
     CONSTRAINT repromaterijal_cijena_ck CHECK (cijena > 0)
 );
 
+----------------------------------------------- MARKO
+
+CREATE TABLE plan_proizvodnje (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_proizvod INT NOT NULL,
+    datum_pocetka DATETIME NOT NULL,
+    datum_zavrsetka DATETIME NOT NULL,
+    kolicina INT NOT NULL,
+    FOREIGN KEY (id_proizvod) REFERENCES proizvod(id) 
+);
+
+CREATE TABLE skladiste_vino (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_vino INT NOT NULL,
+    datum DATETIME NOT NULL,
+    tip_transakcije ENUM('ulaz', 'izlaz') NOT NULL, 
+    kolicina INT NOT NULL,
+    lokacija VARCHAR(100),
+    FOREIGN KEY (id_vino) REFERENCES vino(id)
+);
+
+CREATE TABLE skladiste_repromaterijal (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_repromaterijal INT NOT NULL,
+    datum DATETIME NOT NULL,
+    tip_transakcije ENUM('ulaz', 'izlaz') NOT NULL,
+    kolicina INT NOT NULL,
+    lokacija VARCHAR(100),
+    FOREIGN KEY (id_repromaterijal) REFERENCES repromaterijal(id) 
+);
 
 
 -- trigger za izracun iznos_stavke u stavke_narudzbe

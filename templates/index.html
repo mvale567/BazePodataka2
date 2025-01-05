@@ -6,21 +6,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <title>Naslovna</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 
 <body>
 
     {% include 'header.html' %}
 
+    <div class="inner-container">
+        <nav class="inner-nav">
+            <ul>
+                <li><a href="#" class="nav-button"> Zaposlenik</a></li>
+                <li><a href="#" class="nav-button"> Kupac</a></li>
+                <li><a href="#" class="nav-button"> Prijevoznik</a></li>
+                <li><a href="#" class="nav-button">Proizvodi</a></li>
+                <li>
+                    <a href="#" class="nav-button" id="zahtjeviBtn"> Zahtjevi</a>
+                    <ul class="dropdown">
+                        <li><a href="#" class="nav-button"> Zahtjev za narudžbu</a></li>
+                        <li><a href="#" class="nav-button"> Zahtjev za nabavu</a></li>
+                    </ul>
+                </li>
+                <li><a href="#" class="nav-button"> Plan proizvodnje</a></li>
+                <li><a href="#" class="nav-button">Skladište</a></li>
 
+                <li><a href="#" class="nav-button"> Transport</a></li>
+                <li><a href="#" class="nav-button"> Računi</a></li>
+            </ul>
+        </nav>
 
-    <section class="home__hero">
-        <div class="home__container">Vinarija</div>
-    </section>
+        <div class="iframe-container">
+            <iframe name="inner-content-frame" src="#" class="inner-content-frame"></iframe>
+        </div>
+    </div>
 
 
 
     {% include 'footer.html' %}
 </body>
+
+<script>
+    $(document).ready(function () {
+        $('.dropdown').hide();
+        $('#zahtjeviBtn').click(function (event) {
+            event.preventDefault();
+            $(this).next('.dropdown').slideToggle();
+        });
+        $(document).click(function (event) {
+            if (!$(event.target).closest('.nav-button').length) {
+                $('.dropdown').slideUp();
+            }
+        });
+    });
+</script>
 
 </html>
