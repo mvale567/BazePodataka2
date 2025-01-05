@@ -71,6 +71,36 @@ CREATE TABLE stavka_narudzbe (
     CONSTRAINT stavka_narudzbe_kolicina_ck CHECK (kolicina > 0)
 );
 
+----------------------------------------------- MARTA
+CREATE TABLE prijevoznik (
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+	naziv VARCHAR(50),
+	adresa VARCHAR(50),
+	email VARCHAR(50),
+	telefon VARCHAR(50),
+	oib CHAR(11) UNIQUE
+);
+
+CREATE TABLE transport (
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+	registracija VARCHAR(50) NOT NULL,
+	ime_vozaca VARCHAR(50) NOT NULL,
+	datum_polaska DATETIME NOT NULL,
+	datum_dolaska DATETIME NOT NULL,
+	kolicina CHAR(11) UNIQUE,
+	status_transporta ENUM('Obavljen', 'Otkazan') NOT NULL
+	FOREIGN KEY (id_prijevoznik) REFERENCES prijevoznik(id)
+);
+
+CREATE TABLE racun (
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+	datum_racuna DATETIME NOT NULL,
+	FOREIGN KEY (id_kupac) REFERENCES kupac(id),
+	FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id),
+	FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id),
+	FOREIGN KEY (id_transport) REFERENCES transport(id)
+);
+
 
 -- trigger za izracun iznos_stavke u stavke_narudzbe
 DELIMITER //
