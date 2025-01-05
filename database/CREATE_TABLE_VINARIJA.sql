@@ -128,6 +128,40 @@ CREATE TABLE racun (
 	FOREIGN KEY (id_transport) REFERENCES transport(id)
 );
 
+----------------------------------------------- DAVOR
+CREATE TABLE vino (
+    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+    naziv VARCHAR(255) NOT NULL,
+    vrsta ENUM('bijelo', 'crno', 'rose', 'pjenušavo') NOT NULL,
+    sorta VARCHAR(100) NOT NULL,
+    godina_berbe YEAR NOT NULL CHECK (godina_berbe <= YEAR(CURDATE()))
+);
+
+CREATE TABLE proizvod (
+    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+    id_vino INTEGER NOT NULL,
+    cijena DECIMAL(10, 2) NOT NULL CHECK (cijena > 0),
+    datum_punjenja DATE NOT NULL,
+    postotak_alkohola DECIMAL(5, 2) NOT NULL,
+    rok_trajanja DATE NOT NULL,
+    CONSTRAINT proizvod__vino_fk FOREIGN KEY (id_vino) REFERENCES vino(id),
+    CONSTRAINT proizvod_postotak_alkohola_ck CHECK (postotak_alkohola BETWEEN 0 AND 100),
+    CONSTRAINT proizvod_rok_trajanja_ck CHECK (rok_trajanja > datum_punjenja)
+);
+
+
+CREATE TABLE repromaterijal (
+    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+    id_dobavljac INTEGER NOT NULL,
+    naziv VARCHAR(255) NOT NULL,
+    vrsta VARCHAR(100),
+    opis TEXT,
+    cijena DECIMAL(10, 2) NOT NULL,
+    CONSTRAINT repromaterijal__dobavljac_fk FOREIGN KEY (id_dobavljac) REFERENCES dobavljac(id),
+    CONSTRAINT repromaterijal_cijena_ck CHECK (cijena > 0)
+);
+
+
 
 -- trigger za izracun iznos_stavke u stavke_narudzbe
 DELIMITER //
