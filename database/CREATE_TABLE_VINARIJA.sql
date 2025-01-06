@@ -134,7 +134,7 @@ CREATE TABLE vino (
     naziv VARCHAR(255) NOT NULL,
     vrsta ENUM('bijelo', 'crno', 'rose', 'pjenušavo') NOT NULL,
     sorta VARCHAR(100) NOT NULL,
-    godina_berbe YEAR NOT NULL CHECK (godina_berbe <= YEAR(CURDATE()))
+    godina_berbe YEAR NOT NULL
 );
 
 CREATE TABLE proizvod (
