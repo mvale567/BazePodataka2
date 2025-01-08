@@ -1145,6 +1145,39 @@ FROM
 	zahtjev_za_narudzbu zzn
 WHERE
 	zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
+
+----------------------------------------------- VID
+-- upit, koji zaposlenik je primio najviše narudžbi
+
+SELECT z.id, z.ime, z.prezime, COUNT(zzn.id) AS broj_narudzbi
+FROM zaposlenik z
+JOIN zahtjev_za_narudzbu zzn ON z.id = zzn.id_zaposlenik
+GROUP BY z.id, z.ime, z.prezime
+ORDER BY broj_narudzbi DESC
+LIMIT 1;
+
+-- koji prijevoznik ima najviše obavljenih dostavi
+
+SELECT p.id, p.naziv, COUNT(t.id) AS broj_voznji
+FROM prijevoznik p
+JOIN transport t ON p.id = t.id_prijevoznik
+WHERE t.status_transporta = 'Obavljen'
+GROUP BY p.id, p.naziv
+ORDER BY broj_voznji DESC
+LIMIT 1;
+
+-- kojeg vina ima najviše na skladištu
+SELECT v.naziv, v.vrsta, (SUM(CASE WHEN sv.tip_transakcije = 'ulaz' THEN sv.kolicina ELSE 0 END) -
+                         SUM(CASE WHEN sv.tip_transakcije = 'izlaz' THEN sv.kolicina ELSE 0 END)) AS trenutno_na_skladistu
+FROM vino v
+JOIN berba b ON v.id = b.id_vino
+JOIN skladiste_vino sv ON b.id = sv.id_berba
+GROUP BY v.id, v.naziv, v.vrsta
+ORDER BY trenutno_na_skladistu DESC
+LIMIT 1;
+
+
+
     
 
 
