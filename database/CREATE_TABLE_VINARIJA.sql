@@ -204,7 +204,8 @@ CREATE TABLE zahtjev_za_nabavu (
 
 
 
------------------------------------------------ MARTA
+
+-- MARTA
 CREATE TABLE prijevoznik (
 	id INTEGER AUTO_INCREMENT PRIMARY KEY,
 	naziv VARCHAR(50),
@@ -262,6 +263,59 @@ BEGIN
     END IF;
 END //
 DELIMITER ;
+
+--
+CREATE TABLE mp_stanje_skladista_vina (
+	lokacija VARCHAR(100),
+    kolicina INT
+);
+
+
+
+
+-- PROCEDURA
+
+
+
+
+DELIMITER //
+CREATE PROCEDURE azuriraj_stanje(IN p_tip_transakcije ENUM('ulaz', 'izlaz'), IN p_lokacija VARCHAR(100), IN p_kolicina INT)
+BEGIN
+	DECLARE l_postoji INT;
+    SELECT COUNT(*) INTO l_postoji
+		FROM mp_stanje_skladista_vina
+        WHERE lokacija = p_lokacija;
+        
+	IF p_tip_transakcije = 'ulaz' THEN
+		IF l_postoji = 0 THEN
+			INSERT INTO mp_stanje_skladista_vina VALUES(p_lokacija, p_kolicina);
+		ELSE
+			UPDATE mp_stanje_skladista_vina 
+            SET kolicina = kolicina + p_kolicina WHERE lokacija = p_lokacija;
+        END IF;
+	END IF;
+    IF p_tip_transakcije = 'izlaz' THEN
+		IF l_postoji = 0 THEN
+				INSERT INTO mp_stanje_skladista_vina VALUES(p_lokacija, p_kolicina);
+			ELSE
+				UPDATE mp_stanje_skladista_vina 
+				SET kolicina = kolicina - p_kolicina WHERE lokacija = p_lokacija;
+			END IF;
+    
+	END IF;
+    
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER ai_skladiste_vino
+	AFTER INSERT ON skladiste_vino
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_stanje(new.tip_transakcije, new.lokacija, new.kolicina);
+END //
+DELIMITER ;
+SET SQL_SAFE_UPDATES = 0;
 
 
 ----------------------------------------------- LAURA
@@ -1089,3 +1143,7 @@ FROM
 	zahtjev_za_narudzbu zzn
 WHERE
 	zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
+    
+
+
+
