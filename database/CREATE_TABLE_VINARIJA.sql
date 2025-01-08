@@ -250,6 +250,19 @@ BEGIN
 END //
 DELIMITER
 
+-- trigger za provjeru količine pri ulazu u skladište repromaterijala
+
+DELIMITER //
+CREATE TRIGGER bi_negativna_kolicina
+BEFORE INSERT ON skladiste_repromaterijal
+FOR EACH ROW
+BEGIN
+    IF NEW.kolicina < 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Količina ne može biti negativna.';
+    END IF;
+END //
+DELIMITER ;
+
 
 ----------------------------------------------- LAURA
 
