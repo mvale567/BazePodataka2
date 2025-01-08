@@ -235,7 +235,20 @@ CREATE TABLE racun (
 	FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id)
 );
 
+-------------------------------------------- VID
 
+-- trigger za promjenu statusa u "Primljena" pri izradi nove stavke narudžbe
+
+DELIMITER //
+CREATE TRIGGER postavi_status_na_cekanju
+	AFTER INSERT ON stavka_narudzbe
+	FOR EACH ROW
+BEGIN
+    UPDATE zahtjev_za_narudzbu
+    SET status_narudzbe = 'Primljena'
+    WHERE id = NEW.id_zahtjev_za_narudzbu;
+END //
+DELIMITER
 
 
 ----------------------------------------------- LAURA
