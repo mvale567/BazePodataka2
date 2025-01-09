@@ -1156,7 +1156,7 @@ GROUP BY z.id, z.ime, z.prezime
 ORDER BY broj_narudzbi DESC
 LIMIT 1;
 
--- koji prijevoznik ima najviše obavljenih dostavi
+-- koji prijevoznik ima najviše obavljenih dostava
 
 SELECT p.id, p.naziv, COUNT(t.id) AS broj_voznji
 FROM prijevoznik p
@@ -1177,13 +1177,43 @@ ORDER BY trenutno_na_skladistu DESC
 LIMIT 1;
 
 
+-- funkcija za vraćanje statusa narudžbe po ID-u
+DELIMITER //
+
+CREATE FUNCTION vrati_status_narudzbe(order_id INT)
+RETURNS ENUM('Primljena', 'U obradi', 'Na čekanju', 'Spremna za isporuku', 'Poslana', 'Završena', 'Otkazana')
+DETERMINISTIC
+BEGIN
+    DECLARE status_nar ENUM('Primljena', 'U obradi', 'Na čekanju', 'Spremna za isporuku', 'Poslana', 'Završena', 'Otkazana');
+    
+    
+    SELECT status_narudzbe INTO status_nar
+    FROM zahtjev_za_narudzbu
+    WHERE id = order_id;
+    
+    
+    RETURN status_nar;
+END //
+
+DELIMITER ;
+  
 
 
+-- Funkcija koja vraća ukupnu vrijednost svih narudžba
 
-
-
-
-
+DELIMITER //
+CREATE FUNCTION ukupno_narudzbe()
+RETURNS INT
+DETERMINISTIC
+BEGIN
+	DECLARE z INT;
+    
+	SELECT SUM(ukupni_iznos) INTO z
+    FROM zahtjev_za_narudzbu;
+    
+    RETURN z;
+END //
+DELIMITER ;
 
 
 
