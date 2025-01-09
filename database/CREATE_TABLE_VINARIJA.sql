@@ -1217,9 +1217,195 @@ DELIMITER ;
 
 
 
+----------------------------------------------- DAVOR
 
 
+-- trigger koji provjerava je li godina berbe ispravna (tekuća ili neka od prethodnih godina)
 
 
+DELIMITER //
+CREATE TRIGGER provjera_godine_berbe 
+BEFORE INSERT ON berba
+FOR EACH ROW
+BEGIN
+    IF NEW.godina_berbe > YEAR(NOW()) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Godina berbe ne može biti u budućnosti.';
+    END IF;
+END//
+DELIMITER ;
+
+INSERT INTO berba VALUES (64, 2, 2027, 14.00);
+
+SELECT *
+	FROM berba;
+    
+-- trigger koji ažurira ukupnu dostupnu količinu repromaterijala na stanju na temelju odobrenog zahtjeva za nabavu
+
+DELIMITER //
+CREATE TRIGGER au_azuriraj_kolicinu_repromaterijala
+AFTER UPDATE ON zahtjev_za_nabavu
+FOR EACH ROW
+BEGIN
+    IF NEW.status = 'odobreno' THEN
+        UPDATE repromaterijal
+        SET kolicina = kolicina + NEW.kolicina
+        WHERE id = NEW.id_repromaterijal;
+    END IF;
+END//
+DELIMITER ;
+
+-- procedura koja omogućuje ažuriranje statusa narudžbe u tablici zahtjev_za_narudzbu
+
+DELIMITER //
+CREATE PROCEDURE azuriraj_status_narudzbe (
+    IN p_id_narudzbe INT,
+    IN p_novi_status ENUM('Primljena', 'U obradi', 'Na čekanju', 'Spremna za isporuku', 'Poslana', 'Završena', 'Otkazana')
+)
+BEGIN
+    UPDATE zahtjev_za_narudzbu
+    SET status_narudzbe = p_novi_status
+    WHERE id = p_id_narudzbe;
+END//
+DELIMITER ;
+
+SELECT * FROM zahtjev_za_narudzbu;
+
+CALL azuriraj_status_narudzbe(26, 'Poslana');
+
+-- procedura koja generira račun za određeni zahtjev za narudžbu i automatski ga dodaje u tablicu racun
+
+DELIMITER //
+CREATE PROCEDURE generiraj_racun (
+    IN p_id_narudzba INT,
+    IN p_id_zaposlenik INT
+)
+BEGIN
+    INSERT INTO racun (id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
+    VALUES (p_id_zaposlenik, p_id_narudzba, CURDATE());
+END//
+DELIMITER ;
+
+SELECT * FROM racun;
+
+CALL generiraj_racun(1, 1);
+
+
+-- funkcija koja vraća broj završenih narudžbi za određenog kupca
+
+
+DELIMITER //
+CREATE FUNCTION broj_narudzbi_kupca(p_id_kupac INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE broj INT;
+    SELECT COUNT(*)
+    INTO broj
+    FROM zahtjev_za_narudzbu
+    WHERE id_kupac = p_id_kupac AND status_narudzbe = 'Završena';
+
+    RETURN broj;
+END//
+DELIMITER ;
+
+SELECT broj_narudzbi_kupca(15);
+
+
+-- funkcija koja vraća broj zaposlenika u određenom odjelu
+
+DELIMITER //
+CREATE FUNCTION broj_zaposlenika_u_odjelu(p_id_odjel INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE broj INT;
+
+    SELECT COUNT(*)
+    INTO broj
+    FROM zaposlenik
+    WHERE id_odjel = p_id_odjel;
+
+    RETURN broj;
+END//
+DELIMITER ;
+
+SELECT broj_zaposlenika_u_odjelu(2);
+
+
+-- Prikaz proizvoda i njihovih povezanih repromaterijala s ukupnim troškovima repromaterijala po proizvodu
+CREATE VIEW proizvodni_troskovi AS
+	SELECT 
+		p.id AS proizvod_id,
+		v.naziv,
+		b.godina_berbe,
+		p.cijena AS cijena_proizvoda, 
+		SUM(r.cijena) AS ukupni_trosak_repromaterijala
+	FROM 
+		proizvod p
+	JOIN 
+		repromaterijal_proizvod rp ON p.id = rp.id_proizvod
+	JOIN 
+		repromaterijal r ON rp.id_repromaterijal = r.id
+	JOIN
+		berba b ON b.id = p.id_berba
+	JOIN 
+		vino v ON v.id = b.id_vino
+	GROUP BY 
+		p.id, v.naziv, b.godina_berbe, p.cijena;
+
+SELECT * FROM proizvodni_troskovi;
+
+
+SELECT * FROM repromaterijal;
+
+-- Prikaz narudžbi koje su još uvijek u obradi, zajedno s informacijama o kupcima koji su ih naručili
+
+SELECT 
+    zzn.id AS narudzba_id, 
+    zzn.datum_zahtjeva, 
+    k.naziv AS kupac_naziv, 
+    k.ime, 
+    k.prezime, 
+    zzn.ukupni_iznos
+FROM 
+    zahtjev_za_narudzbu zzn
+JOIN 
+    kupac k ON zzn.id_kupac = k.id
+WHERE 
+    zzn.status_narudzbe = 'U obradi';
+    
+-- Prikaz svih punjenja s ukupnim vremenom trajanja i količinom proizvoda punjenog u određenom razdoblju
+
+SELECT 
+    p.id AS punjenje_id, 
+    p.pocetak_punjenja, 
+    p.zavrsetak_punjenja, 
+    DATEDIFF(p.zavrsetak_punjenja, p.pocetak_punjenja) AS trajanje_u_danima,
+    p.kolicina
+FROM 
+    punjenje p
+WHERE 
+    p.pocetak_punjenja BETWEEN '2023-01-01' AND '2023-12-31';   
+
+
+    
+-- Prikaz zaposlenika koji su naručivali repromaterijal, zajedno s brojem odobrenih zahtjeva za nabavu
+
+SELECT 
+    z.id AS zaposlenik_id, 
+    z.ime, 
+    z.prezime, 
+    COUNT(zzn.id) AS broj_odobrenih_zahtjeva
+FROM 
+    zaposlenik z
+JOIN 
+    zahtjev_za_nabavu zzn ON z.id = zzn.id_zaposlenik
+WHERE 
+    zzn.status = 'odobreno'
+GROUP BY 
+    z.id, z.ime, z.prezime;
+    
+SELECT * FROM zahtjev_za_nabavu;
 
 
