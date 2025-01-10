@@ -3,7 +3,7 @@ CREATE DATABASE vinarija;
 USE vinarija;
 
 
---------------------------------------- Danijel
+----------------------------------------- DANIJEL
 CREATE TABLE kupac (
     id INT AUTO_INCREMENT PRIMARY KEY,
     naziv VARCHAR(100) NOT NULL,
@@ -179,7 +179,6 @@ CREATE TABLE skladiste_repromaterijal (
 
 
 
-
 ----------------------------------------------------- VID
 CREATE TABLE skladiste_proizvod (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -196,12 +195,11 @@ CREATE TABLE zahtjev_za_nabavu (
     id_repromaterijal INT NOT NULL,
     kolicina INT NOT NULL,
     datum_zahtjeva DATE NOT NULL,
-    status ENUM('u obradi', 'odobreno', 'odbijeno') NOT NULL,
+    status_nabave ENUM('u obradi', 'odobreno', 'odbijeno') NOT NULL,
     id_zaposlenik INT NOT NULL,
     FOREIGN KEY (id_Repromaterijal) REFERENCES Repromaterijal(id),
     FOREIGN KEY (id_zaposlenik) REFERENCES Zaposlenik(id)
 );
-
 
 
 
@@ -230,26 +228,14 @@ CREATE TABLE transport (
 CREATE TABLE racun (
 	id INTEGER AUTO_INCREMENT PRIMARY KEY,
     id_zaposlenik INTEGER NOT NULL,
-	id_zahtjev_za_narudzbu INTEGER NOT NULL,
+	id_zahtjev_za_narudzbu INTEGER NOT NULL UNIQUE,
 	datum_racuna DATE NOT NULL,
 	FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id),
 	FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id)
 );
 
+
 -------------------------------------------- VID
-
--- trigger za promjenu statusa u "Primljena" pri izradi nove stavke narudžbe
-
-DELIMITER //
-CREATE TRIGGER postavi_status_na_cekanju
-	AFTER INSERT ON stavka_narudzbe
-	FOR EACH ROW
-BEGIN
-    UPDATE zahtjev_za_narudzbu
-    SET status_narudzbe = 'Primljena'
-    WHERE id = NEW.id_zahtjev_za_narudzbu;
-END //
-DELIMITER
 
 -- trigger za provjeru količine pri ulazu u skladište repromaterijala
 
@@ -271,11 +257,7 @@ CREATE TABLE mp_stanje_skladista_vina (
 );
 
 
-
-
 -- PROCEDURA
-
-
 
 
 DELIMITER //
@@ -323,6 +305,7 @@ DELIMITER ;
 ----------------------------------------------- LAURA
 
 -- trigger za izracun iznos_stavke u stavke_narudzbe
+
 DELIMITER //
 CREATE TRIGGER bi_stavka_narudzbe
 	BEFORE INSERT ON stavka_narudzbe
@@ -340,6 +323,7 @@ DELIMITER ;
 
 
 -- trigger za izracun ukupni_iznos u zahtjev_za_narudzbu
+
 DELIMITER //
 CREATE TRIGGER ai_stavka_narudzbe
 	AFTER INSERT ON stavka_narudzbe
@@ -388,7 +372,6 @@ VALUES
 ('Exclusive Wines', '23048392025', 'Iva', 'Ekskluzivić', 'Ekskluzivna 1, Split', 'iva.eksclusive@exclusive.hr', '+385913467890'), 
 ('Vina Premium Select', '13048392026', 'Marin', 'Selekt', 'Selektivna 2, Rijeka', 'marin.selekt@premium.hr', '+385914678123'), 
 ('VinoVibe', '03048392027', 'Ana', 'Vibetić', 'Vibetna 3, Pula', 'ana.vibetic@vibe.hr', '+385915789654');
-
 
 
 INSERT INTO odjel (naziv, broj_zaposlenika) 
@@ -461,7 +444,6 @@ INSERT INTO berba (id_vino, godina_berbe, postotak_alkohola) VALUES
 (7, 2024, 12.5);
 
 
-
 INSERT INTO proizvod (id_berba, volumen, cijena) VALUES
 -- Berbe za vino 1 (Zagorska Graševina)
 (1, '0.5', 11.00), (1, '0.75', 16.00), (1, '1.00', 21.00),
@@ -487,7 +469,6 @@ INSERT INTO proizvod (id_berba, volumen, cijena) VALUES
 
 -- Berbe za vino 7 (Tamni Val)
 (11, '0.5', 14.00), (11, '0.75', 20.50), (11, '1.00', 27.00);
-
 
 
 INSERT INTO punjenje (id_proizvod, oznaka_serije, pocetak_punjenja, zavrsetak_punjenja, kolicina)
@@ -599,14 +580,12 @@ VALUES
 (33, 'AU0003', '2025-01-10', '2025-01-11', 1400);
 
 
-
 INSERT INTO dobavljac (naziv, adresa, email, telefon, oib) 
 VALUES 
 ('Vinski Repromaterijal d.o.o.', 'Adresa 2, Rijeka', 'vinski.repromaterijal@email.com', '051234567', '98765432112'),
 ('Cork & Cap d.o.o.', 'Adresa 3, Split', 'corkcap@email.com', '021876543', '98765432113'), 
 ('WinePro Supplies', 'Adresa 4, Zagreb', 'winepro@email.com', '013123456', '98765432114'),
 ('Etikete d.o.o.', 'Adresa 7, Karlovac', 'etikete@email.com', '047123987', '98765432117');
-
 
 
 INSERT INTO repromaterijal (id_dobavljac, vrsta, opis, cijena, kolicina) VALUES  
@@ -653,7 +632,6 @@ INSERT INTO repromaterijal (id_dobavljac, vrsta, opis, cijena, kolicina) VALUES
 (4, 'Naljepnica', 'Naljepnica za Tamni Val 0.5 L, sjajni finiš', 15.00, 100),  
 (4, 'Naljepnica', 'Naljepnica za Tamni Val 0.75 L, sjajni finiš', 15.00, 100),  
 (4, 'Naljepnica', 'Naljepnica za Tamni Val 1.00 L, sjajni finiš', 15.00, 100);
-
 
 
 INSERT INTO repromaterijal_proizvod (id_proizvod, id_repromaterijal)
@@ -811,7 +789,6 @@ VALUES
 (7, 20, '2025-01-15', 'Primljena');
 
 
-
 INSERT INTO stavka_narudzbe (id_zahtjev_za_narudzbu, id_proizvod, kolicina)
 VALUES
 -- Narudžba 1
@@ -920,7 +897,6 @@ VALUES
 (35, 7, 350), (35, 18, 730), (35, 14, 380), (35, 3, 360);
 
 
-
 INSERT INTO plan_proizvodnje (id_proizvod, datum_pocetka, kolicina)
 VALUES
 -- Zagorska Graševina (berba 2024)
@@ -957,7 +933,6 @@ VALUES
 (31, '2025-02-01', 100), -- 0.5L
 (32, '2025-02-01', 200), -- 0.75L
 (33, '2025-02-01', 200); -- 1.00L
-
 
 
 INSERT INTO skladiste_vino (id_berba, datum, tip_transakcije, kolicina, lokacija)
@@ -1020,80 +995,42 @@ VALUES
 -------------------------------------------------------- LAURA 
 
 INSERT INTO skladiste_repromaterijal (datum, id_repromaterijal, kolicina, tip_transakcije, lokacija)
-SELECT 
-    p.pocetak_punjenja AS datum,
-    rp.id_repromaterijal,
-    SUM(p.kolicina) AS kolicina,
-    'izlaz' AS tip_transakcije,
-    'Skladište D' AS lokacija
-FROM 
-    Punjenje p
-JOIN 
-    Repromaterijal_proizvod rp
-    ON p.id_proizvod = rp.id_proizvod
-GROUP BY 
-    p.pocetak_punjenja, rp.id_repromaterijal
+SELECT p.pocetak_punjenja AS datum, rp.id_repromaterijal, SUM(p.kolicina) AS kolicina, 'izlaz' AS tip_transakcije, 'Skladište D' AS lokacija
+	FROM Punjenje p
+	JOIN Repromaterijal_proizvod rp ON p.id_proizvod = rp.id_proizvod
+	GROUP BY p.pocetak_punjenja, rp.id_repromaterijal
 
 UNION ALL
 
-SELECT 
-    DATE_SUB(p.pocetak_punjenja, INTERVAL 2 WEEK) AS datum,
-    rp.id_repromaterijal,
-    SUM(p.kolicina) AS kolicina,
-    'ulaz' AS tip_transakcije,
-    'Skladište D' AS lokacija
-FROM 
-    Punjenje p
-JOIN 
-    Repromaterijal_proizvod rp
-    ON p.id_proizvod = rp.id_proizvod
-GROUP BY 
-    p.pocetak_punjenja, rp.id_repromaterijal
-ORDER BY 
-    datum, id_repromaterijal;
-
+SELECT DATE_SUB(p.pocetak_punjenja, INTERVAL 2 WEEK) AS datum, rp.id_repromaterijal, SUM(p.kolicina) AS kolicina, 'ulaz' AS tip_transakcije, 'Skladište D' AS lokacija
+	FROM Punjenje p
+	JOIN Repromaterijal_proizvod rp ON p.id_proizvod = rp.id_proizvod
+	GROUP BY p.pocetak_punjenja, rp.id_repromaterijal
+	ORDER BY datum, id_repromaterijal;
 
 
 INSERT INTO skladiste_proizvod (id_proizvod, datum, tip_transakcije, kolicina, lokacija)
-SELECT 
-    id_proizvod,
-    zavrsetak_punjenja AS datum,
-    'ulaz' AS tip_transakcije,
-    kolicina,
-    'Skladište E' AS lokacija
-FROM 
-    punjenje
+SELECT id_proizvod, zavrsetak_punjenja AS datum, 'ulaz' AS tip_transakcije, kolicina, 'Skladište E' AS lokacija
+	FROM punjenje
+
 UNION ALL
-SELECT 
-    sn.id_proizvod,
-    DATE_ADD(zn.datum_zahtjeva, INTERVAL 7 DAY) AS datum,
-    'izlaz' AS tip_transakcije,
-    sn.kolicina,
-    'Skladište E' AS lokacija
-FROM 
-    stavka_narudzbe sn
-JOIN 
-    zahtjev_za_narudzbu zn ON sn.id_zahtjev_za_narudzbu = zn.id
-WHERE 
-    zn.status_narudzbe IN ('Poslana', 'Završena')
-ORDER BY 
-	datum;
+
+SELECT sn.id_proizvod, DATE_ADD(zn.datum_zahtjeva, INTERVAL 7 DAY) AS datum, 'izlaz' AS tip_transakcije, sn.kolicina, 'Skladište E' AS lokacija
+	FROM stavka_narudzbe sn
+	JOIN zahtjev_za_narudzbu zn ON sn.id_zahtjev_za_narudzbu = zn.id
+	WHERE zn.status_narudzbe IN ('Poslana', 'Završena')
+	ORDER BY datum;
 
 
-
-INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status, id_zaposlenik)
-SELECT 
-    id_repromaterijal AS id_repromaterijal,
-    kolicina,
-    DATE_SUB(datum, INTERVAL 14 DAY) AS datum_zahtjeva,
-    'odobreno' AS status,
-    CASE 
-        WHEN id % 3 = 1 THEN 4
-        WHEN id % 3 = 2 THEN 10
-        ELSE 14
-    END AS id_zaposlenik
-FROM skladiste_repromaterijal
-WHERE tip_transakcije = 'ulaz';
+INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik)
+SELECT id_repromaterijal AS id_repromaterijal, kolicina, DATE_SUB(datum, INTERVAL 14 DAY) AS datum_zahtjeva, 'odobreno' AS status_nabave,
+CASE 
+	WHEN id % 3 = 1 THEN 4
+	WHEN id % 3 = 2 THEN 10
+	ELSE 14
+END AS id_zaposlenik
+	FROM skladiste_repromaterijal
+	WHERE tip_transakcije = 'ulaz';
 
 
 INSERT INTO prijevoznik (naziv, adresa, email, telefon, oib)
@@ -1105,7 +1042,6 @@ VALUES
 ('LogistikTransport d.o.o.', 'Zagorska ulica 10, Krapina', 'logistik@email.com', '031456789', '11223344600'),
 ('Brza Dostava d.o.o.', 'Zagrebačka cesta 8, Sesvete', 'brzi@email.com', '023123456', '11223344611'),
 ('SafeTrans d.o.o.', 'Varaždinska ulica 12, Donja Stubica', 'safetrans@email.com', '013112233', '11223344622');
-
 
 
 INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca, datum_polaska, datum_dolaska, kolicina, status_transporta)
@@ -1135,16 +1071,11 @@ VALUES
 (2, 'ZG9999XX', 'Filip Marković', '2025-01-22', NULL, 2240, 'U tijeku');
 
 
-
 INSERT INTO racun (id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
-SELECT
-	16 AS id_zaposlenik,
-	zzn.id AS id_zahtjev_za_narudzbu,
-	DATE_ADD(zzn.datum_zahtjeva, INTERVAL 3 DAY) AS datum_racuna
-FROM
-	zahtjev_za_narudzbu zzn
-WHERE
-	zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
+SELECT 16 AS id_zaposlenik, zzn.id AS id_zahtjev_za_narudzbu, DATE_ADD(zzn.datum_zahtjeva, INTERVAL 3 DAY) AS datum_racuna
+	FROM zahtjev_za_narudzbu zzn
+	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
+
 
 ----------------------------------------------- VID
 -- upit, koji zaposlenik je primio najviše narudžbi
@@ -1177,6 +1108,20 @@ ORDER BY trenutno_na_skladistu DESC
 LIMIT 1;
 
 
+-- trigger za promjenu statusa u "Primljena" pri izradi nove stavke narudžbe
+
+DELIMITER //
+CREATE TRIGGER postavi_status_na_cekanju
+	AFTER INSERT ON stavka_narudzbe
+	FOR EACH ROW
+BEGIN
+    UPDATE zahtjev_za_narudzbu
+    SET status_narudzbe = 'Primljena'
+    WHERE id = NEW.id_zahtjev_za_narudzbu;
+END //
+DELIMITER ;
+
+
 -- funkcija za vraćanje statusa narudžbe po ID-u
 DELIMITER //
 
@@ -1197,7 +1142,6 @@ END //
 
 DELIMITER ;
   
-
 
 -- Funkcija koja vraća ukupnu vrijednost svih narudžba
 
@@ -1235,7 +1179,7 @@ BEGIN
 END//
 DELIMITER ;
 
-INSERT INTO berba VALUES (64, 2, 2027, 14.00);
+-- INSERT INTO berba VALUES (64, 2, 2027, 14.00);
 
 SELECT *
 	FROM berba;
@@ -1247,13 +1191,14 @@ CREATE TRIGGER au_azuriraj_kolicinu_repromaterijala
 AFTER UPDATE ON zahtjev_za_nabavu
 FOR EACH ROW
 BEGIN
-    IF NEW.status = 'odobreno' THEN
+    IF NEW.status_nabave = 'odobreno' THEN
         UPDATE repromaterijal
         SET kolicina = kolicina + NEW.kolicina
         WHERE id = NEW.id_repromaterijal;
     END IF;
 END//
 DELIMITER ;
+
 
 -- procedura koja omogućuje ažuriranje statusa narudžbe u tablici zahtjev_za_narudzbu
 
@@ -1271,14 +1216,15 @@ DELIMITER ;
 
 SELECT * FROM zahtjev_za_narudzbu;
 
-CALL azuriraj_status_narudzbe(26, 'Poslana');
+CALL azuriraj_status_narudzbe(25, 'Na čekanju');
+
 
 -- procedura koja generira račun za određeni zahtjev za narudžbu i automatski ga dodaje u tablicu racun
 
 DELIMITER //
 CREATE PROCEDURE generiraj_racun (
-    IN p_id_narudzba INT,
-    IN p_id_zaposlenik INT
+    IN p_id_zaposlenik INT,
+    IN p_id_narudzba INT
 )
 BEGIN
     INSERT INTO racun (id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
@@ -1288,7 +1234,7 @@ DELIMITER ;
 
 SELECT * FROM racun;
 
-CALL generiraj_racun(1, 1);
+CALL generiraj_racun(1, 35);
 
 
 -- funkcija koja vraća broj završenih narudžbi za određenog kupca
@@ -1356,7 +1302,6 @@ CREATE VIEW proizvodni_troskovi AS
 
 SELECT * FROM proizvodni_troskovi;
 
-
 SELECT * FROM repromaterijal;
 
 -- Prikaz narudžbi koje su još uvijek u obradi, zajedno s informacijama o kupcima koji su ih naručili
@@ -1402,7 +1347,7 @@ FROM
 JOIN 
     zahtjev_za_nabavu zzn ON z.id = zzn.id_zaposlenik
 WHERE 
-    zzn.status = 'odobreno'
+    zzn.status_nabave = 'odobreno'
 GROUP BY 
     z.id, z.ime, z.prezime;
     
