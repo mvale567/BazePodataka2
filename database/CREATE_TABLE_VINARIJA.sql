@@ -1354,3 +1354,149 @@ GROUP BY
 SELECT * FROM zahtjev_za_nabavu;
 
 
+
+--------------------------------------------Danijel
+
+•	Pogledi
+
+-- Zaposlenici koji rade u prodaji
+
+CREATE VIEW View_Zaposlenici_Prodaja AS
+SELECT z.id, z.ime, z.prezime, z.adresa, z.email, z.telefon
+FROM zaposlenik z
+JOIN odjel o ON z.id_odjel = o.id
+WHERE o.naziv = 'Prodaja';
+
+-- Kupci koji imaju e-mail domenu @vina.hr
+
+CREATE VIEW View_Kupci_Vina_HR AS
+SELECT naziv, oib, ime, prezime, adresa, email, telefon
+FROM kupac
+WHERE email LIKE '%@vina.hr';
+
+-- Podaci o zaposlenicima s odjelom i statusom
+
+CREATE VIEW View_Zaposlenici_S_ODjelom AS
+SELECT z.id, z.ime, z.prezime, z.adresa, z.email, z.telefon, z.datum_zaposlenja, z.status_zaposlenika, o.naziv AS odjel
+FROM zaposlenik z
+JOIN odjel o ON z.id_odjel = o.id;
+
+
+•	Procedure
+
+-- Kreiranje procedure za ažuriranje podataka o zaposleniku
+DELIMITER $$
+
+CREATE PROCEDURE update_zaposlenik(
+    IN p_id INT,
+    IN p_ime VARCHAR(255),
+    IN p_prezime VARCHAR(255),
+    IN p_adresa VARCHAR(255),
+    IN p_email VARCHAR(255),
+    IN p_telefon VARCHAR(20),
+    IN p_status_zaposlenika VARCHAR(50)
+)
+BEGIN
+    UPDATE zaposlenik
+    SET ime = p_ime, prezime = p_prezime, adresa = p_adresa, email = p_email, telefon = p_telefon, status_zaposlenika = p_status_zaposlenika
+    WHERE id = p_id;
+END $$
+
+DELIMITER ;
+
+-- Kreiranje procedure za unos novog zaposlenika
+DELIMITER $$
+
+CREATE PROCEDURE insert_zaposlenik(
+    IN p_id_odjel INT,
+    IN p_ime VARCHAR(255),
+    IN p_prezime VARCHAR(255),
+    IN p_adresa VARCHAR(255),
+    IN p_email VARCHAR(255),
+    IN p_telefon VARCHAR(20),
+    IN p_datum_zaposlenja DATE,
+    IN p_status_zaposlenika VARCHAR(50)
+)
+BEGIN
+    INSERT INTO zaposlenik (id_odjel, ime, prezime, adresa, email, telefon, datum_zaposlenja, status_zaposlenika)
+    VALUES (p_id_odjel, p_ime, p_prezime, p_adresa, p_email, p_telefon, p_datum_zaposlenja, p_status_zaposlenika);
+END $$
+
+DELIMITER ;
+
+• Triggers
+
+Ažuriranje statusa zaposlenika nakon promjene njegove adrese
+
+DELIMITER //
+
+CREATE TRIGGER au_azuriraj_status_zaposlenika
+AFTER UPDATE ON zaposlenik
+FOR EACH ROW
+BEGIN
+    IF OLD.adresa <> NEW.adresa THEN
+        UPDATE zaposlenik
+        SET status_zaposlenika = 'promijenjena adresa'
+        WHERE id = NEW.id;
+    END IF;
+END//
+
+DELIMITER ;
+
+-- Povećanje broja zaposlenih u odjelu nakon dodavanja novog zaposlenika:
+
+DELIMITER //
+
+CREATE TRIGGER au_povecaj_broj_zaposlenih
+AFTER INSERT ON zaposlenik
+FOR EACH ROW
+BEGIN
+    UPDATE odjel
+    SET broj_zaposlenika = broj_zaposlenika + 1
+    WHERE id = NEW.id_odjel;
+END//
+
+DELIMITER ;
+
+•	Upiti
+
+-- Zaposlenici koji su zaposleni više od 2 godine
+
+SELECT ime, prezime, datum_zaposlenja
+FROM zaposlenik
+WHERE datum_zaposlenja <= CURDATE() - INTERVAL 2 YEAR;
+
+-- Kupci koji su unutar Splita i Dubrovnika
+
+SELECT naziv, ime, prezime, adresa
+FROM kupac
+WHERE adresa LIKE '%Split%' OR adresa LIKE '%Dubrovnik%';
+
+-- Kupci koji nisu iz Zagreba
+
+SELECT naziv, ime, prezime, adresa, email, telefon
+FROM kupac
+WHERE adresa NOT LIKE '%Zagreb%';
+
+•	Transakcije
+
+-- Brisanje zaposlenika i ažuriranje broja zaposlenika u odjelu
+
+START TRANSACTION;
+
+DELETE FROM zaposlenik WHERE id = 8;
+
+UPDATE odjel SET broj_zaposlenika = broj_zaposlenika - 1 WHERE id = 2;
+
+COMMIT;
+
+-- Ažuriranje podataka o kupcu i zaposleniku
+
+START TRANSACTION;
+
+UPDATE kupac SET telefon = '+385919876543' WHERE oib = '12345678912';
+
+UPDATE zaposlenik SET telefon = '+385919876543' WHERE id = 15;
+
+COMMIT;
+
