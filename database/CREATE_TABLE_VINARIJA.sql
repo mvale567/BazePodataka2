@@ -1436,27 +1436,14 @@ FOR EACH ROW
 BEGIN
     IF OLD.adresa <> NEW.adresa THEN
         UPDATE zaposlenik
-        SET status_zaposlenika = 'promijenjena adresa'
-        WHERE id = NEW.id;
+        SET status_zaposlenika = 'aktivan'
+        WHERE id = NEW.id AND status_zaposlenika != 'aktivan';
     END IF;
 END//
 
 DELIMITER ;
 
--- Povećanje broja zaposlenih u odjelu nakon dodavanja novog zaposlenika:
 
-DELIMITER //
-
-CREATE TRIGGER au_povecaj_broj_zaposlenih
-AFTER INSERT ON zaposlenik
-FOR EACH ROW
-BEGIN
-    UPDATE odjel
-    SET broj_zaposlenika = broj_zaposlenika + 1
-    WHERE id = NEW.id_odjel;
-END//
-
-DELIMITER ;
 
 •	Upiti
 
