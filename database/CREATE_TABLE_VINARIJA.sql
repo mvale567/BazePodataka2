@@ -409,11 +409,13 @@ BEGIN
 END //
 DELIMITER ;
 
+
 CREATE TABLE stanje_skladista_vina (
 	id_berba INTEGER PRIMARY KEY,
     kolicina DECIMAL(8,2),
     CONSTRAINT stanje_skladista_vina__berba_fk FOREIGN KEY (id_berba) REFERENCES berba(id)
 );
+
 
 DELIMITER //
 CREATE PROCEDURE azuriraj_kolicinu_vina (IN p_id_berba INTEGER, IN p_tip_transakcije ENUM('ulaz', 'izlaz'), IN p_kolicina DECIMAL(8,2))
@@ -463,6 +465,7 @@ BEGIN
 END //
 DELIMITER ;
 
+
 DELIMITER //
 CREATE TRIGGER ad_skladiste_vino_akv
 	AFTER DELETE ON skladiste_vino
@@ -483,11 +486,13 @@ BEGIN
 END //
 DELIMITER ;
 
+
 CREATE TABLE stanje_skladista_proizvoda (
 	id_proizvod INTEGER PRIMARY KEY,
     kolicina INTEGER,
     CONSTRAINT stanje_skladista_proizvoda__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
 );
+
 
 DELIMITER //
 CREATE PROCEDURE azuriraj_kolicinu_proizvoda (IN p_id_proizvod INTEGER, IN p_tip_transakcije ENUM('ulaz', 'izlaz'), IN p_kolicina INTEGER)
@@ -526,6 +531,7 @@ BEGIN
 END //
 DELIMITER ;
 
+
 DELIMITER //
 CREATE TRIGGER ai_skladiste_proizvod
 	AFTER INSERT ON skladiste_proizvod
@@ -535,6 +541,7 @@ BEGIN
 END //
 DELIMITER ;
 
+
 DELIMITER //
 CREATE TRIGGER ad_skladiste_proizvod
 	AFTER DELETE ON skladiste_proizvod
@@ -543,6 +550,7 @@ BEGIN
 	CALL azuriraj_kolicinu_proizvoda(old.id_proizvod, old.tip_transakcije, -old.kolicina);
 END //
 DELIMITER ;
+
 
 DELIMITER //
 CREATE TRIGGER au_skladiste_proizvod
@@ -560,6 +568,7 @@ CREATE TABLE stanje_skladista_repromaterijala (
     kolicina INTEGER,
     CONSTRAINT stanje_skladista_repromaterijala__repromaterijal FOREIGN KEY (id_repromaterijal) REFERENCES repromaterijal(id)
 );
+
 
 DELIMITER //
 CREATE PROCEDURE azuriraj_kolicinu_repromaterijala (IN p_id_repromaterijal INTEGER, IN p_tip_transakcije ENUM('ulaz', 'izlaz'), p_kolicina INTEGER)
@@ -599,6 +608,7 @@ BEGIN
 END //
 DELIMITER ;
 
+
 DELIMITER //
 CREATE TRIGGER ai_skladiste_repromaterijal
 	AFTER INSERT ON skladiste_repromaterijal
@@ -607,6 +617,7 @@ BEGIN
 	CALL azuriraj_kolicinu_repromaterijala(new.id_repromaterijal, new.tip_transakcije, new.kolicina);
 END //
 DELIMITER ;
+
 
 DELIMITER //
 CREATE TRIGGER ad_skladiste_repromaterijal
@@ -617,6 +628,7 @@ BEGIN
 END //
 DELIMITER ;
 
+
 DELIMITER //
 CREATE TRIGGER au_skladiste_repromaterijal
 	AFTER UPDATE ON skladiste_repromaterijal
@@ -626,6 +638,7 @@ BEGIN
     CALL azuriraj_kolicinu_repromaterijala(new.id_repromaterijal, new.tip_transakcije, new.kolicina);
 END //
 DELIMITER ;
+
 
 INSERT INTO kupac (naziv, oib, ime, prezime, adresa, email, telefon) 
 VALUES 
@@ -1625,9 +1638,9 @@ SELECT * FROM zahtjev_za_nabavu;
 
 
 
---------------------------------------------Danijel
+-------------------------------------------- Danijel
 
-•	Pogledi
+-- Pogledi
 
 -- Zaposlenici koji rade u prodaji
 
@@ -1715,7 +1728,7 @@ DELIMITER ;
 
 
 
-•	Upiti
+-- Upiti
 
 -- Zaposlenici koji su zaposleni više od 2 godine
 
@@ -1735,7 +1748,7 @@ SELECT naziv, ime, prezime, adresa, email, telefon
 FROM kupac
 WHERE adresa NOT LIKE '%Zagreb%';
 
-•	Transakcije
+-- Transakcije
 
 -- Brisanje zaposlenika i ažuriranje broja zaposlenika u odjelu
 
