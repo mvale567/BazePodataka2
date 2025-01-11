@@ -18,7 +18,7 @@ CREATE TABLE kupac (
 CREATE TABLE odjel (
     id INT AUTO_INCREMENT PRIMARY KEY,
     naziv VARCHAR(100) NOT NULL,
-    broj_zaposlenika INT CHECK (broj_zaposlenika >= 0)
+    broj_zaposlenika INT CHECK (broj_zaposlenika >= 0) DEFAULT 0
 );
 
 CREATE TABLE zaposlenik (
@@ -102,10 +102,9 @@ CREATE TABLE repromaterijal (
     id_dobavljac INTEGER NOT NULL,
     vrsta VARCHAR(100),
     opis TEXT,
-    cijena DECIMAL(10, 2) NOT NULL,
-    kolicina INTEGER NOT NULL,
+    jedinicna_cijena DECIMAL(10, 2) NOT NULL,
     CONSTRAINT repromaterijal__dobavljac_fk FOREIGN KEY (id_dobavljac) REFERENCES dobavljac(id),
-    CONSTRAINT repromaterijal_cijena_ck CHECK (cijena > 0)
+    CONSTRAINT repromaterijal_cijena_ck CHECK (jedinicna_cijena > 0)
 );
 
 
@@ -127,7 +126,7 @@ CREATE TABLE zahtjev_za_narudzbu (
     id_zaposlenik INTEGER NOT NULL,
     datum_zahtjeva DATE NOT NULL,
     ukupni_iznos DECIMAL(8, 2),
-    status_narudzbe ENUM('Primljena', 'U obradi', 'Na čekanju', 'Spremna za isporuku', 'Poslana', 'Završena', 'Otkazana') NOT NULL,
+    status_narudzbe ENUM('Primljena', 'U obradi', 'Na čekanju', 'Spremna za isporuku', 'Poslana', 'Završena', 'Otkazana') NOT NULL DEFAULT 'Na čekanju',
     CONSTRAINT zahtjev_za_narudzbu__kupac_fk FOREIGN KEY (id_kupac) REFERENCES kupac(id),
     CONSTRAINT zahtjev_za_narudzbu__zaposlenik_fk FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id)
 );
@@ -138,7 +137,7 @@ CREATE TABLE stavka_narudzbe (
     id_zahtjev_za_narudzbu INTEGER NOT NULL,
     id_proizvod INTEGER NOT NULL,
     kolicina INTEGER NOT NULL,
-    iznos_stavke DECIMAL(8, 2),
+    iznos_stavke DECIMAL(8, 2) NOT NULL,
     CONSTRAINT stavka_narudzbe__zahtjev_za_narudzbu_fk FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id),
     CONSTRAINT stavka_narudzbe__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
     CONSTRAINT stavka_narudzbe_uk UNIQUE (id_zahtjev_za_narudzbu, id_proizvod),
@@ -197,8 +196,8 @@ CREATE TABLE zahtjev_za_nabavu (
     datum_zahtjeva DATE NOT NULL,
     status_nabave ENUM('u obradi', 'odobreno', 'odbijeno') NOT NULL,
     id_zaposlenik INT NOT NULL,
-    FOREIGN KEY (id_Repromaterijal) REFERENCES Repromaterijal(id),
-    FOREIGN KEY (id_zaposlenik) REFERENCES Zaposlenik(id)
+    FOREIGN KEY (id_repromaterijal) REFERENCES repromaterijal(id),
+    FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id)
 );
 
 
@@ -301,8 +300,79 @@ END //
 DELIMITER ;
 
 
+----------------------------------------------- DAVOR
+
+-- funkcija koja vraća broj zaposlenika u određenom odjelu
+
+DELIMITER //
+CREATE FUNCTION broj_zaposlenika_u_odjelu(p_id_odjel INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE broj INT;
+
+    SELECT COUNT(*)
+    INTO broj
+    FROM zaposlenik
+    WHERE id_odjel = p_id_odjel AND status_zaposlenika = 'aktivan';
+
+    RETURN broj;
+END//
+DELIMITER ;
+
+SELECT broj_zaposlenika_u_odjelu(2);
+
 
 ----------------------------------------------- LAURA
+
+-- procedura za ažuriranje broja zaposlenika u tablici odjel
+DELIMITER //
+CREATE PROCEDURE azuriraj_broj_zaposlenika(IN p_id_odjel INTEGER)
+BEGIN
+	UPDATE odjel
+		SET broj_zaposlenika = broj_zaposlenika_u_odjelu(p_id_odjel)
+        WHERE id = p_id_odjel;
+END //
+DELIMITER ;
+
+
+-- triggeri za insert, update i delete operacije na tablici odjel pozivaju proceduru azuriraj_broj_zaposlenika
+
+DELIMITER //
+CREATE TRIGGER ai_zaposlenik
+	AFTER INSERT ON zaposlenik
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_broj_zaposlenika(new.id_odjel);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER ad_zaposlenik
+	AFTER DELETE ON zaposlenik
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_broj_zaposlenika(old.id_odjel);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER au_zaposlenik
+	AFTER UPDATE ON zaposlenik
+    FOR EACH ROW
+BEGIN
+	-- ako je zaposlenik promijenio odjel
+	IF new.id_odjel != old.id_odjel THEN
+		CALL azuriraj_broj_zaposlenika(old.id_odjel);
+		CALL azuriraj_broj_zaposlenika(new.id_odjel);
+	ELSE  -- ako se promijenio status zaposlenika
+		IF new.status_zaposlenika != old.status_zaposlenika THEN
+			CALL azuriraj_broj_zaposlenika(new.id_odjel);
+		END IF;
+    END IF;
+END //
+DELIMITER ;
+
 
 -- trigger za izracun iznos_stavke u stavke_narudzbe
 
@@ -339,6 +409,223 @@ BEGIN
 END //
 DELIMITER ;
 
+CREATE TABLE stanje_skladista_vina (
+	id_berba INTEGER PRIMARY KEY,
+    kolicina DECIMAL(8,2),
+    CONSTRAINT stanje_skladista_vina__berba_fk FOREIGN KEY (id_berba) REFERENCES berba(id)
+);
+
+DELIMITER //
+CREATE PROCEDURE azuriraj_kolicinu_vina (IN p_id_berba INTEGER, IN p_tip_transakcije ENUM('ulaz', 'izlaz'), IN p_kolicina DECIMAL(8,2))
+BEGIN
+	DECLARE berba_postoji INTEGER;
+    DECLARE nova_kolicina DECIMAL(8,2);
+    
+    SELECT COUNT(*) INTO berba_postoji
+		FROM stanje_skladista_vina
+		WHERE id_berba = p_id_berba;
+    
+    IF berba_postoji = 0 THEN
+		IF p_tip_transakcije = 'ulaz' THEN
+			INSERT INTO stanje_skladista_vina VALUES (p_id_berba, p_kolicina);
+        ELSE
+			SIGNAL SQLSTATE '45002' SET MESSAGE_TEXT = 'Nije moguće dodati izlaznu transakciju za berbu koja nema ulaznih transakcija!';
+        END IF;
+	ELSE
+		IF p_tip_transakcije = 'ulaz' THEN
+			UPDATE stanje_skladista_vina
+				SET kolicina = kolicina + p_kolicina
+                WHERE id_berba = p_id_berba;
+		ELSE 
+			UPDATE stanje_skladista_vina
+				SET kolicina = kolicina - p_kolicina
+                WHERE id_berba = p_id_berba;
+		END IF;
+    END IF;
+    
+    SELECT kolicina INTO nova_kolicina
+		FROM stanje_skladista_vina
+		WHERE id_berba = p_id_berba; 
+    
+    IF nova_kolicina < 0 THEN
+		SIGNAL SQLSTATE '45003' SET MESSAGE_TEXT = 'Količina vina ne može biti negativna!';
+	END IF;
+END //
+DELIMITER ;
+
+
+DELIMITER //
+CREATE TRIGGER ai_skladiste_vino_akv
+	AFTER INSERT ON skladiste_vino
+	FOR EACH ROW
+BEGIN
+	CALL azuriraj_kolicinu_vina(new.id_berba, new.tip_transakcije, new.kolicina);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER ad_skladiste_vino_akv
+	AFTER DELETE ON skladiste_vino
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_kolicinu_vina(old.id_berba, old.tip_transakcije, -old.kolicina);
+END //
+DELIMITER ;
+
+
+DELIMITER //
+CREATE TRIGGER au_skladiste_vino_akv
+	AFTER UPDATE ON skladiste_vino
+    FOR EACH ROW
+BEGIN 
+	CALL azuriraj_kolicinu_vina(old.id_berba, old.tip_transakcije, -old.kolicina);
+    CALL azuriraj_kolicinu_vina(new.id_berba, new.tip_transakcije, new.kolicina);
+END //
+DELIMITER ;
+
+CREATE TABLE stanje_skladista_proizvoda (
+	id_proizvod INTEGER PRIMARY KEY,
+    kolicina INTEGER,
+    CONSTRAINT stanje_skladista_proizvoda__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
+);
+
+DELIMITER //
+CREATE PROCEDURE azuriraj_kolicinu_proizvoda (IN p_id_proizvod INTEGER, IN p_tip_transakcije ENUM('ulaz', 'izlaz'), IN p_kolicina INTEGER)
+BEGIN
+	DECLARE proizvod_postoji, nova_kolicina INTEGER;
+    
+    SELECT COUNT(*) INTO proizvod_postoji
+		FROM stanje_skladista_proizvoda
+		WHERE id_proizvod = p_id_proizvod;
+        
+	IF proizvod_postoji = 0 THEN
+		IF p_tip_transakcije = 'ulaz' THEN
+			INSERT INTO stanje_skladista_proizvoda VALUES (p_id_proizvod, p_kolicina);
+		ELSE
+			SIGNAL SQLSTATE '45004' SET MESSAGE_TEXT = 'Nije moguće dodati izlaznu transakciju za proizvod koji nema ulaznih transakcija!';
+		END IF;
+	ELSE 
+		IF p_tip_transakcije = 'ulaz' THEN
+			UPDATE stanje_skladista_proizvoda
+				SET kolicina = kolicina + p_kolicina
+                WHERE id_proizvod = p_id_proizvod;
+        ELSE 
+			UPDATE stanje_skladista_proizvoda
+				SET kolicina = kolicina - p_kolicina
+                WHERE id_proizvod = p_id_proizvod;
+		END IF;
+    END IF;
+    
+    SELECT kolicina INTO nova_kolicina
+		FROM stanje_skladista_proizvoda
+        WHERE id_proizvod = p_id_proizvod;
+        
+	IF nova_kolicina < 0 THEN
+		SIGNAL SQLSTATE '45005' SET MESSAGE_TEXT = 'Količina proizvoda ne može biti negativna!';
+    END IF;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER ai_skladiste_proizvod
+	AFTER INSERT ON skladiste_proizvod
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_kolicinu_proizvoda(new.id_proizvod, new.tip_transakcije, new.kolicina);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER ad_skladiste_proizvod
+	AFTER DELETE ON skladiste_proizvod
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_kolicinu_proizvoda(old.id_proizvod, old.tip_transakcije, -old.kolicina);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER au_skladiste_proizvod
+	AFTER UPDATE ON skladiste_proizvod
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_kolicinu_proizvoda(old.id_proizvod, old.tip_transakcije, -old.kolicina);
+    CALL azuriraj_kolicinu_proizvoda(new.id_proizvod, new.tip_transakcije, new.kolicina);
+END //
+DELIMITER ;
+
+
+CREATE TABLE stanje_skladista_repromaterijala (
+	id_repromaterijal INTEGER PRIMARY KEY,
+    kolicina INTEGER,
+    CONSTRAINT stanje_skladista_repromaterijala__repromaterijal FOREIGN KEY (id_repromaterijal) REFERENCES repromaterijal(id)
+);
+
+DELIMITER //
+CREATE PROCEDURE azuriraj_kolicinu_repromaterijala (IN p_id_repromaterijal INTEGER, IN p_tip_transakcije ENUM('ulaz', 'izlaz'), p_kolicina INTEGER)
+BEGIN
+	DECLARE repromaterijal_postoji, nova_kolicina INTEGER;
+    
+    SELECT COUNT(*) INTO repromaterijal_postoji
+		FROM stanje_skladista_repromaterijala
+        WHERE id_repromaterijal = p_id_repromaterijal;
+	
+    IF repromaterijal_postoji = 0 THEN
+		IF p_tip_transakcije = 'ulaz' THEN
+			INSERT INTO stanje_skladista_repromaterijala VALUES (p_id_repromaterijal, p_kolicina);
+		ELSE
+			SIGNAL SQLSTATE '45006' SET MESSAGE_TEXT = 'Nije moguće dodati izlaznu transakciju za repromaterijal koji nema ulaznih transakcija!';
+        END IF;
+	ELSE
+		IF p_tip_transakcije = 'ulaz' THEN
+			UPDATE stanje_skladista_repromaterijala
+				SET kolicina = kolicina + p_kolicina
+                WHERE id_repromaterijal = p_id_repromaterijal;
+		ELSE
+			UPDATE stanje_skladista_repromaterijala
+				SET kolicina = kolicina - p_kolicina
+                WHERE id_repromaterijal = p_id_repromaterijal;
+        END IF;
+    END IF;
+    
+    SELECT kolicina INTO nova_kolicina
+		FROM stanje_skladista_repromaterijala
+        WHERE id_repromaterijal = p_id_repromaterijal;
+        
+	IF nova_kolicina < 0 THEN
+		SIGNAL SQLSTATE '45007' SET MESSAGE_TEXT = 'Količina repromaterijala ne može biti negativna!';
+    END IF;
+    
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER ai_skladiste_repromaterijal
+	AFTER INSERT ON skladiste_repromaterijal
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_kolicinu_repromaterijala(new.id_repromaterijal, new.tip_transakcije, new.kolicina);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER ad_skladiste_repromaterijal
+	AFTER DELETE ON skladiste_repromaterijal
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_kolicinu_repromaterijala(old.id_repromaterijal, old.tip_transakcije, -old.kolicina); 
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER au_skladiste_repromaterijal
+	AFTER UPDATE ON skladiste_repromaterijal
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_kolicinu_repromaterijala(old.id_repromaterijal, old.tip_transakcije, -old.kolicina); 
+    CALL azuriraj_kolicinu_repromaterijala(new.id_repromaterijal, new.tip_transakcije, new.kolicina);
+END //
+DELIMITER ;
 
 INSERT INTO kupac (naziv, oib, ime, prezime, adresa, email, telefon) 
 VALUES 
@@ -374,51 +661,51 @@ VALUES
 ('VinoVibe', '03048392027', 'Ana', 'Vibetić', 'Vibetna 3, Pula', 'ana.vibetic@vibe.hr', '+385915789654');
 
 
-INSERT INTO odjel (naziv, broj_zaposlenika) 
+INSERT INTO odjel (naziv) 
 VALUES 
-('Prodaja', 5),
-('Proizvodnja', 15),
-('Marketing', 3),
-('Logistika', 8),
-('Kontrola kvalitete', 6), 
-('IT podrška', 4), 
-('Administracija', 18), 
-('Nabava', 20), 
-('Računovodstvo', 8);
+('Prodaja'),
+('Proizvodnja'),
+('Marketing'),
+('Logistika'),
+('Kontrola kvalitete'), 
+('IT podrška'), 
+('Administracija'), 
+('Nabava'), 
+('Računovodstvo');
 
 
 INSERT INTO zaposlenik (id_odjel, ime, prezime, adresa, email, telefon, datum_zaposlenja, status_zaposlenika)
 VALUES
-(2, 'Marko', 'Kovačić', 'Široka ulica 5, Split', 'marko.kovacic@email.com', '0956781234', '2023-06-15', 'aktivan'),
-(4, 'Ivana', 'Marić', 'Trg slobode 10, Rijeka', 'ivana.maric@email.com', '0991234567', '2022-03-01', 'aktivan'),
-(2, 'Luka', 'Barišić', 'Zeleno polje 4, Osijek', 'luka.barisic@email.com', '0976543210', '2021-11-15', 'aktivan'),
-(8, 'Maja', 'Knežević', 'Maslina 7, Karlovac', 'maja.knezevic@email.com', '0915678901', '2023-01-20', 'aktivan'),
-(1, 'Tomislav', 'Kralj', 'Mirna ulica 2, Zagreb', 'tomislav.kralj@email.com', '0981122334', '2020-05-15', 'aktivan'),
-(2, 'Hrvoje', 'Pavić', 'Riva 3, Split', 'hrvoje.pavic@email.com', '0915567788', '2021-10-10', 'aktivan'),
-(6, 'Lidija', 'Mandić', 'Gajeva 7, Rijeka', 'lidija.mandic@email.com', '0923344556', '2019-04-20', 'aktivan'),
-(2, 'Petar', 'Marković', 'Vlaška 10, Zagreb', 'petar.markovic@firma.hr', '+385915672341', '2022-02-15', 'aktivan'),
-(1, 'Ana', 'Novak', 'Perivoj 8, Split', 'ana.novak@firma.hr', '+385914568123', '2023-07-10', 'aktivan'),
-(8, 'Luka', 'Vuković', 'Kneza Branimira 5, Rijeka', 'luka.vukovic@firma.hr', '+385913456789', '2020-09-05', 'aktivan'),
-(2, 'Katarina', 'Horvat', 'Dubravska 3, Dubrovnik', 'katarina.horvat@firma.hr', '+385912345678', '2021-05-30', 'aktivan'),
-(2, 'Dino', 'Petrović', 'Sjenjak 2, Osijek', 'dino.petrovic@firma.hr', '+385918901234', '2022-10-12', 'aktivan'),
-(2, 'Ema', 'Jurić', 'Vukovarska 7, Zagreb', 'ema.juric@firma.hr', '+385919876543', '2023-03-08', 'aktivan'),
-(8, 'Filip', 'Knežević', 'Palmotićeva 4, Split', 'filip.knezevic@firma.hr', '+385916754321', '2020-12-25', 'aktivan'),
-(2, 'Maja', 'Tomić', 'Frankopanska 6, Rijeka', 'maja.tomic@firma.hr', '+385914567890', '2021-04-15', 'aktivan'),
-(9, 'Nikola', 'Grgić', 'Put Sv. Roka 9, Dubrovnik', 'nikola.grgic@firma.hr', '+385912346789', '2019-11-03', 'aktivan'),
-(1, 'Tina', 'Šarić', 'Trg Ivana Pavla 1, Osijek', 'tina.saric@firma.hr', '+385918234567', '2022-06-20', 'aktivan'),
-(2, 'Karlo', 'Lovrić', 'Savska 11, Zagreb', 'karlo.lovric@firma.hr', '+385919123876', '2021-02-17', 'aktivan'),
-(6, 'Marin', 'Vidović', 'Šetalište Bačvice 15, Split', 'marin.vidovic@firma.hr', '+385915673219', '2023-08-11', 'aktivan'),
-(1, 'Iva', 'Babić', 'Križanićeva 8, Rijeka', 'iva.babic@firma.hr', '+385913421678', '2020-10-05', 'aktivan'),
-(5, 'Lucija', 'Pavlović', 'Pera Čingrije 14, Dubrovnik', 'lucija.pavlovic@firma.hr', '+385912437658', '2021-07-29', 'aktivan'),
-(4, 'Petra', 'Matković', 'Rokova 12, Osijek', 'petra.matkovic@firma.hr', '+385918234987', '2019-09-15', 'aktivan'),
-(3, 'Ante', 'Božić', 'Jankomir 13, Zagreb', 'ante.bozic@firma.hr', '+385919654123', '2020-03-21', 'aktivan'),
-(7, 'Andrija', 'Krpan', 'Istarska 10, Split', 'andrija.krpan@firma.hr', '+385916321789', '2021-12-11', 'aktivan'),
-(2, 'Marina', 'Mikulić', 'Adamićeva 17, Rijeka', 'marina.mikulic@firma.hr', '+385914567312', '2022-01-25', 'aktivan'),
-(4, 'Filip', 'Blažević', 'Ante Topića 18, Dubrovnik', 'filip.blazevic@firma.hr', '+385912348765', '2023-05-03', 'aktivan'),
-(7, 'Katarina', 'Perić', 'Radnička 19, Osijek', 'katarina.peric@firma.hr', '+385918320456', '2021-08-14', 'aktivan'),
-(2, 'Marta', 'Klarić', 'Novaka Radonića 20, Zagreb', 'marta.klaric@firma.hr', '+385919123754', '2022-11-09', 'aktivan'),
-(2, 'Dora', 'Barbir', 'Kralja Zvonimira 22, Split', 'dora.barbir@firma.hr', '+385915789012', '2023-04-07', 'aktivan'),
-(4, 'Tina', 'Jakšić', 'Svačićeva 25, Rijeka', 'tina.jaksic@firma.hr', '+385913476590', '2020-06-18', 'aktivan');
+(2, 'Marko', 'Kovačić', 'Široka ulica 5, Split', 'marko.kovacic@email.com', '0956781234', '2023-07-30', 'aktivan'),
+(4, 'Ivana', 'Marić', 'Trg slobode 10, Rijeka', 'ivana.maric@email.com', '0991234567', '2023-07-28', 'aktivan'),
+(2, 'Luka', 'Barišić', 'Zeleno polje 4, Osijek', 'luka.barisic@email.com', '0976543210', '2023-08-01', 'aktivan'),
+(8, 'Maja', 'Knežević', 'Maslina 7, Karlovac', 'maja.knezevic@email.com', '0915678901', '2023-07-31', 'aktivan'),
+(1, 'Tomislav', 'Kralj', 'Mirna ulica 2, Zagreb', 'tomislav.kralj@email.com', '0981122334', '2024-08-03', 'aktivan'),
+(2, 'Hrvoje', 'Pavić', 'Riva 3, Split', 'hrvoje.pavic@email.com', '0915567788', '2023-08-02', 'aktivan'),
+(6, 'Lidija', 'Mandić', 'Gajeva 7, Rijeka', 'lidija.mandic@email.com', '0923344556', '2023-08-05', 'neaktivan'),
+(2, 'Petar', 'Marković', 'Vlaška 10, Zagreb', 'petar.markovic@firma.hr', '+385915672341', '2023-08-04', 'aktivan'),
+(1, 'Ana', 'Novak', 'Perivoj 8, Split', 'ana.novak@firma.hr', '+385914568123', '2024-06-10', 'aktivan'),
+(8, 'Luka', 'Vuković', 'Kneza Branimira 5, Rijeka', 'luka.vukovic@firma.hr', '+385913456789', '2023-09-05', 'aktivan'),
+(2, 'Katarina', 'Horvat', 'Dubravska 3, Dubrovnik', 'katarina.horvat@firma.hr', '+385912345678', '2023-08-07', 'aktivan'),
+(2, 'Dino', 'Petrović', 'Sjenjak 2, Osijek', 'dino.petrovic@firma.hr', '+385918901234', '2023-08-09', 'aktivan'),
+(2, 'Ema', 'Jurić', 'Vukovarska 7, Zagreb', 'ema.juric@firma.hr', '+385919876543', '2023-07-29', 'aktivan'),
+(8, 'Filip', 'Knežević', 'Palmotićeva 4, Split', 'filip.knezevic@firma.hr', '+385916754321', '2023-08-06', 'aktivan'),
+(2, 'Maja', 'Tomić', 'Frankopanska 6, Rijeka', 'maja.tomic@firma.hr', '+385914567890', '2023-10-15', 'aktivan'),
+(9, 'Nikola', 'Grgić', 'Put Sv. Roka 9, Dubrovnik', 'nikola.grgic@firma.hr', '+385912346789', '2023-11-03', 'aktivan'),
+(1, 'Tina', 'Šarić', 'Trg Ivana Pavla 1, Osijek', 'tina.saric@firma.hr', '+385918234567', '2024-01-05', 'aktivan'),
+(2, 'Karlo', 'Lovrić', 'Savska 11, Zagreb', 'karlo.lovric@firma.hr', '+385919123876', '2023-08-04', 'aktivan'),
+(6, 'Marin', 'Vidović', 'Šetalište Bačvice 15, Split', 'marin.vidovic@firma.hr', '+385915673219', '2024-04-22', 'aktivan'),
+(1, 'Iva', 'Babić', 'Križanićeva 8, Rijeka', 'iva.babic@firma.hr', '+385913421678', '2023-08-12', 'neaktivan'),
+(5, 'Lucija', 'Pavlović', 'Pera Čingrije 14, Dubrovnik', 'lucija.pavlovic@firma.hr', '+385912437658', '2023-12-14', 'aktivan'),
+(4, 'Petra', 'Matković', 'Rokova 12, Osijek', 'petra.matkovic@firma.hr', '+385918234987', '2023-07-27', 'aktivan'),
+(3, 'Ante', 'Božić', 'Jankomir 13, Zagreb', 'ante.bozic@firma.hr', '+385919654123', '2024-11-15', 'aktivan'),
+(7, 'Andrija', 'Krpan', 'Istarska 10, Split', 'andrija.krpan@firma.hr', '+385916321789', '2023-08-16', 'aktivan'),
+(2, 'Marina', 'Mikulić', 'Adamićeva 17, Rijeka', 'marina.mikulic@firma.hr', '+385914567312', '2023-07-30', 'aktivan'),
+(4, 'Filip', 'Blažević', 'Ante Topića 18, Dubrovnik', 'filip.blazevic@firma.hr', '+385912348765', '2023-07-26', 'aktivan'),
+(7, 'Katarina', 'Perić', 'Radnička 19, Osijek', 'katarina.peric@firma.hr', '+385918320456', '2023-08-02', 'aktivan'),
+(2, 'Marta', 'Klarić', 'Novaka Radonića 20, Zagreb', 'marta.klaric@firma.hr', '+385919123754', '2023-08-08', 'aktivan'),
+(2, 'Dora', 'Barbir', 'Kralja Zvonimira 22, Split', 'dora.barbir@firma.hr', '+385915789012', '2023-08-05', 'aktivan'),
+(4, 'Tina', 'Jakšić', 'Svačićeva 25, Rijeka', 'tina.jaksic@firma.hr', '+385913476590', '2023-09-18', 'aktivan');
 
 
 INSERT INTO vino (naziv, vrsta, sorta) VALUES
@@ -556,28 +843,29 @@ VALUES
 (31, 'AS0002', '2024-10-15', '2024-10-17', 500),
 (32, 'AT0002', '2024-10-15', '2024-10-17', 2100),
 (33, 'AU0002', '2024-10-15', '2024-10-17', 2950),
--- 2025-01-10
-(4, 'AA0003', '2025-01-10', '2025-01-11', 230),
-(5, 'AB0003', '2025-01-10', '2025-01-11', 1200),
-(6, 'AC0003', '2025-01-10', '2025-01-11', 1400),
-(10, 'AD0003', '2025-01-10', '2025-01-11', 220),
-(11, 'AE0003', '2025-01-10', '2025-01-11', 1300),
-(12, 'AF0003', '2025-01-10', '2025-01-11', 1450),
-(16, 'AG0003', '2025-01-10', '2025-01-11', 230),
-(17, 'AH0003', '2025-01-10', '2025-01-11', 1200),
-(18, 'AI0003', '2025-01-10', '2025-01-11', 1400),
-(22, 'AJ0003', '2025-01-10', '2025-01-11', 220),
-(23, 'AK0003', '2025-01-10', '2025-01-11', 1200),
-(24, 'AL0003', '2025-01-10', '2025-01-11', 1400),
-(25, 'AM0003', '2025-01-10', '2025-01-11', 230),
-(26, 'AN0003', '2025-01-10', '2025-01-11', 1300),
-(27, 'AO0003', '2025-01-10', '2025-01-11', 1500),
-(28, 'AP0003', '2025-01-10', '2025-01-11', 220),
-(29, 'AQ0003', '2025-01-10', '2025-01-11', 1250),
-(30, 'AR0003', '2025-01-10', '2025-01-11', 1400),
-(31, 'AS0003', '2025-01-10', '2025-01-11', 240),
-(32, 'AT0003', '2025-01-10', '2025-01-11', 1200),
-(33, 'AU0003', '2025-01-10', '2025-01-11', 1400);
+-- 2024-10-30
+(4, 'AA0003', '2024-10-30', '2024-10-31', 230),
+(5, 'AB0003', '2024-10-30', '2024-10-31', 1200),
+(6, 'AC0003', '2024-10-30', '2024-10-31', 1400),
+(10, 'AD0003', '2024-10-30', '2024-10-31', 220),
+(11, 'AE0003', '2024-10-30', '2024-10-31', 1300),
+(12, 'AF0003', '2024-10-30', '2024-10-31', 1450),
+(16, 'AG0003', '2024-10-30', '2024-10-31', 230),
+(17, 'AH0003', '2024-10-30', '2024-10-31', 1200),
+(18, 'AI0003', '2024-10-30', '2024-10-31', 1400),
+(22, 'AJ0003', '2024-10-30', '2024-10-31', 220),
+(23, 'AK0003', '2024-10-30', '2024-10-31', 1200),
+(24, 'AL0003', '2024-10-30', '2024-10-31', 1400),
+(25, 'AM0003', '2024-10-30', '2024-10-31', 230),
+(26, 'AN0003', '2024-10-30', '2024-10-31', 1300),
+(27, 'AO0003', '2024-10-30', '2024-10-31', 1500),
+(28, 'AP0003', '2024-10-30', '2024-10-31', 220),
+(29, 'AQ0003', '2024-10-30', '2024-10-31', 1250),
+(30, 'AR0003', '2024-10-30', '2024-10-31', 1400),
+(31, 'AS0003', '2024-10-30', '2024-10-31', 240),
+(32, 'AT0003', '2024-10-30', '2024-10-31', 1200),
+(33, 'AU0003', '2024-10-30', '2024-10-31', 1400);
+
 
 
 INSERT INTO dobavljac (naziv, adresa, email, telefon, oib) 
@@ -588,52 +876,53 @@ VALUES
 ('Etikete d.o.o.', 'Adresa 7, Karlovac', 'etikete@email.com', '047123987', '98765432117');
 
 
-INSERT INTO repromaterijal (id_dobavljac, vrsta, opis, cijena, kolicina) VALUES  
-(1, 'Kutija', 'Karton, dimenzije za 6 standardnih boca', 60.00, 100),  
-(1, 'Kutija', 'Karton, dimenzije za 12 standardnih boca', 90.00, 100),  
+INSERT INTO repromaterijal (id_dobavljac, vrsta, opis, jedinicna_cijena) VALUES
+(1, 'Kutija', 'Karton, dimenzije za 6 standardnih boca', 0.60),
+(1, 'Kutija', 'Karton, dimenzije za 12 standardnih boca', 0.90),
 
-(2, 'Čep', 'Pluteni čep za vina', 35.00, 100),  
-(2, 'Čep', 'Sintetički čep za vina', 22.00, 100),  
+(2, 'Čep', 'Pluteni čep za vina', 0.35),
+(2, 'Čep', 'Sintetički čep za vina', 0.22),
 
--- Boce za bijelo vino (različiti volumeni)  
-(3, 'Staklena boca', 'Boca od 0.5 L za bijelo vino', 120.00, 100),  
-(3, 'Staklena boca', 'Boca od 0.75 L za bijelo vino', 150.00, 100),  
-(3, 'Staklena boca', 'Boca od 1.00 L za bijelo vino', 180.00, 100),  
+-- Boce za bijelo vino (različiti volumeni)
+(3, 'Staklena boca', 'Boca od 0.5 L za bijelo vino', 1.20),
+(3, 'Staklena boca', 'Boca od 0.75 L za bijelo vino', 1.50),
+(3, 'Staklena boca', 'Boca od 1.00 L za bijelo vino', 1.80),
 
--- Boce za crno vino (različiti volumeni)  
-(3, 'Staklena boca', 'Boca od 0.5 L za crno vino', 160.00, 100),  
-(3, 'Staklena boca', 'Boca od 0.75 L za crno vino', 190.00, 100),  
-(3, 'Staklena boca', 'Boca od 1.00 L za crno vino', 220.00, 100),  
+-- Boce za crno vino (različiti volumeni)
+(3, 'Staklena boca', 'Boca od 0.5 L za crno vino', 1.60),
+(3, 'Staklena boca', 'Boca od 0.75 L za crno vino', 1.90),
+(3, 'Staklena boca', 'Boca od 1.00 L za crno vino', 2.20),
 
--- Boce za rose vino (različiti volumeni)  
-(3, 'Staklena boca', 'Boca od 0.5 L za rose vino', 140.00, 100),  
-(3, 'Staklena boca', 'Boca od 0.75 L za rose vino', 170.00, 100),  
-(3, 'Staklena boca', 'Boca od 1.00 L za rose vino', 200.00, 100),  
+-- Boce za rose vino (različiti volumeni)
+(3, 'Staklena boca', 'Boca od 0.5 L za rose vino', 1.40),
+(3, 'Staklena boca', 'Boca od 0.75 L za rose vino', 1.70),
+(3, 'Staklena boca', 'Boca od 1.00 L za rose vino', 2.00),
 
 -- Naljepnice za svaki tip vina i volumen
-(4, 'Naljepnica', 'Naljepnica za Zagorsku Graševinu 0.5 L, mat finiš', 12.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Zagorsku Graševinu 0.75 L, mat finiš', 12.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Zagorsku Graševinu 1.00 L, mat finiš', 12.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Zeleni Breg 0.5 L, mat finiš', 12.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Zeleni Breg 0.75 L, mat finiš', 12.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Zeleni Breg 1.00 L, mat finiš', 12.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Bijelu Zvijezdu 0.5 L, mat finiš', 12.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Bijelu Zvijezdu 0.75 L, mat finiš', 12.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Bijelu Zvijezdu 1.00 L, mat finiš', 12.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Ružičasti Horizont 0.5 L, pastelne boje', 18.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Ružičasti Horizont 0.75 L, pastelne boje', 18.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Ružičasti Horizont 1.00 L, pastelne boje', 18.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Laganu Rosu 0.5 L, pastelne boje', 18.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Laganu Rosu 0.75 L, pastelne boje', 18.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Laganu Rosu 1.00 L, pastelne boje', 18.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Crni Biser 0.5 L, sjajni finiš', 15.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Crni Biser 0.75 L, sjajni finiš', 15.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Crni Biser 1.00 L, sjajni finiš', 15.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Tamni Val 0.5 L, sjajni finiš', 15.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Tamni Val 0.75 L, sjajni finiš', 15.00, 100),  
-(4, 'Naljepnica', 'Naljepnica za Tamni Val 1.00 L, sjajni finiš', 15.00, 100);
+(4, 'Naljepnica', 'Naljepnica za Zagorsku Graševinu 0.5 L, mat finiš', 0.12),
+(4, 'Naljepnica', 'Naljepnica za Zagorsku Graševinu 0.75 L, mat finiš', 0.12),
+(4, 'Naljepnica', 'Naljepnica za Zagorsku Graševinu 1.00 L, mat finiš', 0.12),
+(4, 'Naljepnica', 'Naljepnica za Zeleni Breg 0.5 L, mat finiš', 0.12),
+(4, 'Naljepnica', 'Naljepnica za Zeleni Breg 0.75 L, mat finiš', 0.12),
+(4, 'Naljepnica', 'Naljepnica za Zeleni Breg 1.00 L, mat finiš', 0.12),
+(4, 'Naljepnica', 'Naljepnica za Bijelu Zvijezdu 0.5 L, mat finiš', 0.12),
+(4, 'Naljepnica', 'Naljepnica za Bijelu Zvijezdu 0.75 L, mat finiš', 0.12),
+(4, 'Naljepnica', 'Naljepnica za Bijelu Zvijezdu 1.00 L, mat finiš', 0.12),
+(4, 'Naljepnica', 'Naljepnica za Ružičasti Horizont 0.5 L, pastelne boje', 0.18),
+(4, 'Naljepnica', 'Naljepnica za Ružičasti Horizont 0.75 L, pastelne boje', 0.18),
+(4, 'Naljepnica', 'Naljepnica za Ružičasti Horizont 1.00 L, pastelne boje', 0.18),
+(4, 'Naljepnica', 'Naljepnica za Laganu Rosu 0.5 L, pastelne boje', 0.18),
+(4, 'Naljepnica', 'Naljepnica za Laganu Rosu 0.75 L, pastelne boje', 0.18),
+(4, 'Naljepnica', 'Naljepnica za Laganu Rosu 1.00 L, pastelne boje', 0.18),
+(4, 'Naljepnica', 'Naljepnica za Crni Biser 0.5 L, sjajni finiš', 0.15),
+(4, 'Naljepnica', 'Naljepnica za Crni Biser 0.75 L, sjajni finiš', 0.15),
+(4, 'Naljepnica', 'Naljepnica za Crni Biser 1.00 L, sjajni finiš', 0.15),
+(4, 'Naljepnica', 'Naljepnica za Tamni Val 0.5 L, sjajni finiš', 0.15),
+(4, 'Naljepnica', 'Naljepnica za Tamni Val 0.75 L, sjajni finiš', 0.15),
+(4, 'Naljepnica', 'Naljepnica za Tamni Val 1.00 L, sjajni finiš', 0.15);
 
 
+SELECT * FROM repromaterijal;
 INSERT INTO repromaterijal_proizvod (id_proizvod, id_repromaterijal)
 VALUES
 -- Zagorska Graševina (Berbe 1 i 2)
@@ -807,10 +1096,10 @@ VALUES
 (5, 19, 260),
 
 -- Narudžba 6
-(6, 14, 390), (6, 7, 700), (6, 23, 810),
+(6, 14, 390), (6, 7, 500), (6, 23, 810),
 
 -- Narudžba 7
-(7, 4, 350), (7, 9, 770), (7, 13, 820), (7, 22, 650),
+(7, 4, 150), (7, 9, 770), (7, 13, 820), (7, 22, 650),
 
 -- Narudžba 8
 (8, 26, 730), (8, 5, 310),
@@ -831,13 +1120,13 @@ VALUES
 (13, 18, 720),
 
 -- Narudžba 14
-(14, 31, 690), (14, 22, 750), (14, 1, 380),
+(14, 31, 690), (14, 22, 450), (14, 1, 380),
 
 -- Narudžba 15
-(15, 16, 300), (15, 27, 810), (15, 13, 740), (15, 4, 340), (15, 8, 780),
+(15, 16, 300), (15, 27, 810), (15, 13, 320), (15, 4, 240), (15, 8, 780),
 
 -- Narudžba 16
-(16, 29, 710), (16, 7, 320),
+(16, 29, 710), (16, 7, 220),
 
 -- Narudžba 17
 (17, 5, 380), (17, 25, 780), (17, 10, 800),
@@ -846,7 +1135,7 @@ VALUES
 (18, 2, 280),
 
 -- Narudžba 19
-(19, 19, 370), (19, 24, 700), (19, 9, 730),
+(19, 19, 270), (19, 24, 700), (19, 9, 730),
 
 -- Narudžba 20
 (20, 17, 640), (20, 12, 750), (20, 15, 300), (20, 6, 690),
@@ -861,7 +1150,7 @@ VALUES
 (23, 3, 330),
 
 -- Narudžba 24
-(24, 16, 320), (24, 18, 740), (24, 7, 820), (24, 4, 780),
+(24, 16, 320), (24, 18, 740), (24, 7, 420), (24, 4, 780),
 
 -- Narudžba 25
 (25, 14, 380), (25, 8, 760),
@@ -870,7 +1159,7 @@ VALUES
 (26, 27, 340), (26, 20, 790), (26, 5, 750),
 
 -- Narudžba 27
-(27, 31, 310), (27, 2, 380), (27, 9, 730), (27, 19, 800),
+(27, 31, 310), (27, 2, 380), (27, 9, 730), (27, 19, 600),
 
 -- Narudžba 28
 (28, 22, 710), (28, 6, 320), (28, 12, 290),
@@ -983,13 +1272,19 @@ VALUES
 (9, '2024-10-15', 'izlaz', 5010.0, 'Skladište C'),
 (10, '2024-10-15', 'izlaz', 4867.5, 'Skladište A'),
 (11, '2024-10-15', 'izlaz', 4775.0, 'Skladište B'),
-(2, '2025-01-10', 'izlaz', 2415.0, 'Skladište B'),
-(4, '2025-01-10', 'izlaz', 2535.0, 'Skladište C'),
-(6, '2025-01-10', 'izlaz', 2415.0, 'Skladište A'),
-(8, '2025-01-10', 'izlaz', 2410.0, 'Skladište B'),
-(9, '2025-01-10', 'izlaz', 2590.0, 'Skladište C'),
-(10, '2025-01-10', 'izlaz', 2447.5, 'Skladište A'),
-(11, '2025-01-10', 'izlaz', 2420.0, 'Skladište B');
+(2, '2024-10-30', 'izlaz', 2415.0, 'Skladište B'),
+(4, '2024-10-30', 'izlaz', 2535.0, 'Skladište C'),
+(6, '2024-10-30', 'izlaz', 2415.0, 'Skladište A'),
+(8, '2024-10-30', 'izlaz', 2410.0, 'Skladište B'),
+(9, '2024-10-30', 'izlaz', 2590.0, 'Skladište C'),
+(10, '2024-10-30', 'izlaz', 2447.5, 'Skladište A'),
+(11, '2024-10-30', 'izlaz', 2420.0, 'Skladište B');
+
+SELECT * FROM skladiste_vino;
+SELECT * FROM stanje_skladista_vina;
+
+-- UPDATE skladiste_vino SET id_berba = 2 WHERE id = 1;
+-- DELETE FROM skladiste_vino WHERE id = 1;
 
 
 -------------------------------------------------------- LAURA 
@@ -999,22 +1294,18 @@ SELECT p.pocetak_punjenja AS datum, rp.id_repromaterijal, SUM(p.kolicina) AS kol
 	FROM Punjenje p
 	JOIN Repromaterijal_proizvod rp ON p.id_proizvod = rp.id_proizvod
 	GROUP BY p.pocetak_punjenja, rp.id_repromaterijal
-
 UNION ALL
-
-SELECT DATE_SUB(p.pocetak_punjenja, INTERVAL 2 WEEK) AS datum, rp.id_repromaterijal, SUM(p.kolicina) AS kolicina, 'ulaz' AS tip_transakcije, 'Skladište D' AS lokacija
+SELECT DATE_SUB(p.pocetak_punjenja, INTERVAL 2 WEEK) AS datum, rp.id_repromaterijal, SUM(p.kolicina) + ROUND(RAND(123) * 100 + 50) AS kolicina, 'ulaz' AS tip_transakcije, 'Skladište D' AS lokacija
 	FROM Punjenje p
 	JOIN Repromaterijal_proizvod rp ON p.id_proizvod = rp.id_proizvod
 	GROUP BY p.pocetak_punjenja, rp.id_repromaterijal
 	ORDER BY datum, id_repromaterijal;
 
-
+    
 INSERT INTO skladiste_proizvod (id_proizvod, datum, tip_transakcije, kolicina, lokacija)
 SELECT id_proizvod, zavrsetak_punjenja AS datum, 'ulaz' AS tip_transakcije, kolicina, 'Skladište E' AS lokacija
 	FROM punjenje
-
 UNION ALL
-
 SELECT sn.id_proizvod, DATE_ADD(zn.datum_zahtjeva, INTERVAL 7 DAY) AS datum, 'izlaz' AS tip_transakcije, sn.kolicina, 'Skladište E' AS lokacija
 	FROM stavka_narudzbe sn
 	JOIN zahtjev_za_narudzbu zn ON sn.id_zahtjev_za_narudzbu = zn.id
@@ -1023,7 +1314,7 @@ SELECT sn.id_proizvod, DATE_ADD(zn.datum_zahtjeva, INTERVAL 7 DAY) AS datum, 'iz
 
 
 INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik)
-SELECT id_repromaterijal AS id_repromaterijal, kolicina, DATE_SUB(datum, INTERVAL 14 DAY) AS datum_zahtjeva, 'odobreno' AS status_nabave,
+SELECT id_repromaterijal, kolicina, DATE_SUB(datum, INTERVAL 14 DAY) AS datum_zahtjeva, 'odobreno' AS status_nabave,
 CASE 
 	WHEN id % 3 = 1 THEN 4
 	WHEN id % 3 = 2 THEN 10
@@ -1173,7 +1464,7 @@ BEFORE INSERT ON berba
 FOR EACH ROW
 BEGIN
     IF NEW.godina_berbe > YEAR(NOW()) THEN
-        SIGNAL SQLSTATE '45000'
+        SIGNAL SQLSTATE '45001'
         SET MESSAGE_TEXT = 'Godina berbe ne može biti u budućnosti.';
     END IF;
 END//
@@ -1258,27 +1549,6 @@ DELIMITER ;
 SELECT broj_narudzbi_kupca(15);
 
 
--- funkcija koja vraća broj zaposlenika u određenom odjelu
-
-DELIMITER //
-CREATE FUNCTION broj_zaposlenika_u_odjelu(p_id_odjel INT)
-RETURNS INT
-DETERMINISTIC
-BEGIN
-    DECLARE broj INT;
-
-    SELECT COUNT(*)
-    INTO broj
-    FROM zaposlenik
-    WHERE id_odjel = p_id_odjel;
-
-    RETURN broj;
-END//
-DELIMITER ;
-
-SELECT broj_zaposlenika_u_odjelu(2);
-
-
 -- Prikaz proizvoda i njihovih povezanih repromaterijala s ukupnim troškovima repromaterijala po proizvodu
 CREATE VIEW proizvodni_troskovi AS
 	SELECT 
@@ -1286,7 +1556,7 @@ CREATE VIEW proizvodni_troskovi AS
 		v.naziv,
 		b.godina_berbe,
 		p.cijena AS cijena_proizvoda, 
-		SUM(r.cijena) AS ukupni_trosak_repromaterijala
+		SUM(r.jedinicna_cijena) AS ukupni_trosak_repromaterijala
 	FROM 
 		proizvod p
 	JOIN 
