@@ -1709,20 +1709,20 @@ DELIMITER ;
 
 • Triggers
 
-Ažuriranje statusa zaposlenika nakon promjene njegove adrese
+--Automatski unos datuma zapošljavanja novog zaposlenika
 
 DELIMITER //
 
-CREATE TRIGGER au_azuriraj_status_zaposlenika
-AFTER UPDATE ON zaposlenik
+CREATE TRIGGER bi_postavi_datum_zaposlenja
+BEFORE INSERT ON zaposlenik
 FOR EACH ROW
 BEGIN
-    IF OLD.adresa <> NEW.adresa THEN
-        UPDATE zaposlenik
-        SET status_zaposlenika = 'aktivan'
-        WHERE id = NEW.id AND status_zaposlenika != 'aktivan';
+    IF NEW.datum_zaposlenja IS NULL THEN
+        SET NEW.datum_zaposlenja = CURDATE();
     END IF;
 END//
+
+DELIMITER ;
 
 DELIMITER ;
 
