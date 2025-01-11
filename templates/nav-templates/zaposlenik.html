@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="hr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Naslovna</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+
+<body>
+
+    <section class="zaposlenik">
+        <div class="zaposlenik_container">
+            <div class="zaposlenik_navbar">
+                <button class="zaposlenik_nav-button" id="addEmployeeBtn">Dodaj zaposlenika</button>
+                <button class="zaposlenik_nav-button" id="editDeleteBtn">Uredi/Obriši</button>
+                <div class="dropdown-container">
+                    <button class="zaposlenik_nav-button dropdown-toggle" id="sortBtn">Sortiraj</button>
+                    <div class="dropdown">
+                        <ul>
+                            <li><a href="#" class="dropdown-item">Po imenu</a></li>
+                            <li><a href="#" class="dropdown-item">Po prezimenu</a></li>
+                            <li><a href="#" class="dropdown-item">Po odjelu</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <table class="zaposlenik_table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Ime</th>
+                        <th>Prezime</th>
+                        <th>Adresa</th>
+                        <th>Email</th>
+                        <th>Telefon</th>
+                        <th>Datum zapošljenja</th>
+                        <th>Status zaposlenika</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in zaposlenik %}
+                    <tr>
+                        <td>{{ row[0] }}</td> <!-- ID -->
+                        <td>{{ row[2] }}</td> <!-- Ime -->
+                        <td>{{ row[3] }}</td> <!-- Prezime -->
+                        <td>{{ row[4] }}</td> <!-- Adresa -->
+                        <td>{{ row[5] }}</td> <!-- Email -->
+                        <td>{{ row[6] }}</td> <!-- Telefon -->
+                        <td>{{ row[7] }}</td> <!-- Datum zapošljenja -->
+                        <td>{{ row[8] }}</td> <!-- Status zaposlenika -->
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8">Nema podataka.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</body>
+
+</html>

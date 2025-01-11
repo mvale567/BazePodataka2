@@ -16,3 +16,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+
+// zaposlenik sortiranje, dropdown
+document.addEventListener('DOMContentLoaded', function () {
+    const sortBtn = document.getElementById("sortBtn");
+    const dropdown = document.querySelector(".dropdown");
+
+    sortBtn.addEventListener("click", () => {
+        // Toggle klasu 'active' za dropdown
+        dropdown.classList.toggle("active");
+    });
+});

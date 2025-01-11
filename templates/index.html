@@ -19,8 +19,10 @@
         <div class="inner-container">
             <nav class="inner-nav">
                 <ul>
-                    <li><a href="#" class="nav-button"><i class="fas fa-user"></i> Zaposlenik</a></li>
-                    <li><a href="#" class="nav-button"><i class="fas fa-users"></i> Kupac</a></li>
+                    <li><a href="{{ url_for('zaposlenik') }}" target="outer-content-frame" class="nav-button"><i
+                                class="fas fa-user"></i> Zaposlenik</a></li>
+                    <li><a href="{{ url_for('kupac') }}" target="outer-content-frame" class="nav-button"><i
+                                class="fas fa-users"></i> Kupac</a></li>
                     <li><a href="#" class="nav-button"><i class="fas fa-truck"></i> Prijevoznik</a></li>
                     <li><a href="#" class="nav-button"><i class="fas fa-box"></i> Proizvodi</a></li>
                     <li>
