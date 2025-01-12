@@ -1791,3 +1791,18 @@ FROM prijevoznik p
 JOIN transport t ON p.id = t.id_prijevoznik
 GROUP BY p.naziv
 HAVING SUM(t.kolicina) > 1000;
+
+-- pogledi
+
+-- 1. Pogled: Prikaz svih transporta s nazivima prijevoznika
+CREATE VIEW transport_prikaz AS
+SELECT t.id AS id_transport, t.datum_polaska, t.datum_dolaska, t.kolicina, t.status_transporta, p.naziv AS prijevoznik
+FROM transport t
+JOIN prijevoznik p ON t.id_prijevoznik = p.id;
+
+-- 2. Pogled: Prikaz prijevoznika i njihovih ukupnih količina transporta
+CREATE VIEW prijevoznik_kolicina AS
+SELECT p.naziv AS prijevoznik, SUM(t.kolicina) AS ukupna_kolicina
+FROM prijevoznik p
+LEFT JOIN transport t ON p.id = t.id_prijevoznik
+GROUP BY p.naziv;
