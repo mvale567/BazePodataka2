@@ -300,6 +300,8 @@ END //
 DELIMITER ;
 
 
+
+
 ----------------------------------------------- DAVOR
 
 -- funkcija koja vraća broj zaposlenika u određenom odjelu
@@ -1463,6 +1465,20 @@ BEGIN
 END //
 DELIMITER ;
 
+-- 1. Transakcija, ažuriranje statusa narudžbe u 'Otkazana' i brisanje povezanog računa
+START TRANSACTION;
+
+UPDATE zahtjev_za_narudzbu
+SET status_narudzbe = 'Otkazana'
+WHERE id = 1;
+
+DELETE FROM racun
+WHERE id_zahtjev_za_narudzbu = 1;
+
+COMMIT;
+
+
+
 
 
 ----------------------------------------------- DAVOR
@@ -1911,3 +1927,11 @@ BEGIN
     RETURN broj_transporta;
 END//
 DELIMITER ;
+
+
+
+
+
+
+
+
