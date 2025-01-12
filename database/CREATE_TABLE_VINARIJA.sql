@@ -1825,3 +1825,29 @@ UPDATE prijevoznik
 SET broj_transporta = broj_transporta - 1
 WHERE id = 1;
 COMMIT;
+
+-- trigeri
+-- 1. Triger: Ažuriraj broj transporta prijevoznika nakon unosa transporta
+
+DELIMITER //
+CREATE TRIGGER update_broj_transporta_insert
+AFTER INSERT ON transport
+FOR EACH ROW
+BEGIN
+    UPDATE prijevoznik
+    SET broj_transporta = broj_transporta + 1
+    WHERE id = NEW.id_prijevoznik;
+END //
+DELIMITER ;
+
+-- 2. Triger: Ažuriraj broj transporta prijevoznika nakon brisanja transporta
+DELIMITER //
+CREATE TRIGGER update_broj_transporta_delete
+AFTER DELETE ON transport
+FOR EACH ROW
+BEGIN
+    UPDATE prijevoznik
+    SET broj_transporta = broj_transporta - 1
+    WHERE id = OLD.id_prijevoznik;
+END//
+DELIMITER ;
