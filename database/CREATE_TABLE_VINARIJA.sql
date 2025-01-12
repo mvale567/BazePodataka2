@@ -1881,3 +1881,33 @@ BEGIN
     VALUES (p_naziv, p_oib, p_kontakt);
 END//
 DELIMITER ;
+
+-- funkcije
+
+-- 1. Funkcija: Izračunaj ukupnu količinu robe za određenog prijevoznika
+DELIMITER //
+CREATE FUNCTION ukupna_kolicina_prijevoznika(id_prijevoznik INT)
+RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+BEGIN
+    DECLARE ukupno DECIMAL(10, 2);
+    SELECT SUM(kolicina) INTO ukupno
+    FROM transport
+    WHERE id_prijevoznik = id_prijevoznik;
+    RETURN ukupno;
+END//
+DELIMITER ;
+
+-- 2. Funkcija: Dohvati broj transporta za određenog prijevoznika
+DELIMITER //
+CREATE FUNCTION broj_transporta_prijevoznika(id_prijevoznik INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE broj_transporta INT;
+    SELECT COUNT(*) INTO broj_transporta
+    FROM transport
+    WHERE id_prijevoznik = id_prijevoznik;
+    RETURN broj_transporta;
+END//
+DELIMITER ;
