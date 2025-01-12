@@ -1770,3 +1770,24 @@ UPDATE zaposlenik SET telefon = '+385919876543' WHERE id = 15;
 
 COMMIT;
 
+-- MARTA
+-- upiti
+
+-- 1. Upit: Dohvati ukupnu količinu robe koju je prevezao svaki prijevoznik
+SELECT p.naziv AS prijevoznik, SUM(t.kolicina) AS ukupna_kolicina
+FROM prijevoznik p
+JOIN transport t ON p.id = t.id_prijevoznik
+GROUP BY p.naziv
+ORDER BY ukupna_kolicina DESC;
+
+-- 2. Upit: Pronađi transportne transakcije koje su još u tijeku
+SELECT * 
+FROM transport 
+WHERE status_transporta = 'u tijeku';
+
+-- 3. Upit: Prikaz svih prijevoznika koji su prevezli više od određene količine robe
+SELECT p.naziv AS prijevoznik, SUM(t.kolicina) AS ukupna_kolicina
+FROM prijevoznik p
+JOIN transport t ON p.id = t.id_prijevoznik
+GROUP BY p.naziv
+HAVING SUM(t.kolicina) > 1000;
