@@ -1851,3 +1851,33 @@ BEGIN
     WHERE id = OLD.id_prijevoznik;
 END//
 DELIMITER ;
+
+-- procedure
+
+-- 1. Procedura: Dodavanje novog transporta
+DELIMITER //
+CREATE PROCEDURE dodaj_transport (
+    IN p_id_prijevoznik INT,
+    IN p_tip_robe VARCHAR(50),
+    IN p_datum DATE,
+    IN p_kolicina DECIMAL(10, 2),
+    IN p_status ENUM('u tijeku', 'završeno', 'otkazano')
+)
+BEGIN
+    INSERT INTO transport (id_prijevoznik, tip_robe, datum_transporta, kolicina, status)
+    VALUES (p_id_prijevoznik, p_tip_robe, p_datum, p_kolicina, p_status);
+END//
+DELIMITER ;
+
+-- 2. Procedura: Dodavanje novog prijevoznika
+DELIMITER //
+CREATE PROCEDURE dodaj_prijevoznika (
+    IN p_naziv VARCHAR(100),
+    IN p_oib CHAR(11),
+    IN p_kontakt VARCHAR(100)
+)
+BEGIN
+    INSERT INTO prijevoznik (naziv, oib, kontakt)
+    VALUES (p_naziv, p_oib, p_kontakt);
+END//
+DELIMITER ;
