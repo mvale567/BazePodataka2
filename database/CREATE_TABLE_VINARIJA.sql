@@ -1806,3 +1806,22 @@ SELECT p.naziv AS prijevoznik, SUM(t.kolicina) AS ukupna_kolicina
 FROM prijevoznik p
 LEFT JOIN transport t ON p.id = t.id_prijevoznik
 GROUP BY p.naziv;
+
+-- transakcije
+
+-- 1. Transakcija: Dodavanje novog transporta i ažuriranje broja transporta prijevoznika
+START TRANSACTION;
+INSERT INTO transport (id_prijevoznik, tip_robe, datum_transporta, kolicina, status)
+VALUES (1, 'vino', '2025-01-12', 500, 'u tijeku');
+UPDATE prijevoznik
+SET broj_transporta = broj_transporta + 1
+WHERE id = 1;
+COMMIT;
+
+-- 2. Transakcija: Brisanje transporta i smanjenje broja transporta prijevoznika
+START TRANSACTION;
+DELETE FROM transport WHERE id = 1;
+UPDATE prijevoznik
+SET broj_transporta = broj_transporta - 1
+WHERE id = 1;
+COMMIT;
