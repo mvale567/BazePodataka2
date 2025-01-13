@@ -1921,7 +1921,7 @@ GROUP BY p.naziv;
 
 -- 1. Transakcija: Dodavanje novog transporta i ažuriranje broja transporta prijevoznika
 START TRANSACTION;
-INSERT INTO transport (id_prijevoznik, tip_robe, datum_transporta, kolicina, status)
+INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca datum_polaska, datum_dolaska, kolicina, status_transporta)
 VALUES (1, 'vino', '2025-01-12', 500, 'u tijeku');
 UPDATE prijevoznik
 SET broj_transporta = broj_transporta + 1
