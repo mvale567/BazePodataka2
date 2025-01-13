@@ -234,71 +234,6 @@ CREATE TABLE racun (
 );
 
 
--------------------------------------------- VID
-
--- trigger za provjeru količine pri ulazu u skladište repromaterijala
-
-DELIMITER //
-CREATE TRIGGER bi_negativna_kolicina
-BEFORE INSERT ON skladiste_repromaterijal
-FOR EACH ROW
-BEGIN
-    IF NEW.kolicina < 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Količina ne može biti negativna.';
-    END IF;
-END //
-DELIMITER ;
-
---
-CREATE TABLE mp_stanje_skladista_vina (
-	lokacija VARCHAR(100),
-    kolicina INT
-);
-
-
--- PROCEDURA
-
-
-DELIMITER //
-CREATE PROCEDURE azuriraj_stanje(IN p_tip_transakcije ENUM('ulaz', 'izlaz'), IN p_lokacija VARCHAR(100), IN p_kolicina INT)
-
-BEGIN
-	DECLARE l_postoji INT;
-    SELECT COUNT(*) INTO l_postoji
-		FROM mp_stanje_skladista_vina
-        WHERE lokacija = p_lokacija;
-	SET SQL_SAFE_UPDATES = 0;   
-	IF p_tip_transakcije = 'ulaz' THEN
-		IF l_postoji = 0 THEN
-			INSERT INTO mp_stanje_skladista_vina VALUES(p_lokacija, p_kolicina);
-		ELSE
-			UPDATE mp_stanje_skladista_vina 
-            SET kolicina = kolicina + p_kolicina WHERE lokacija = p_lokacija;
-        END IF;
-	END IF;
-    IF p_tip_transakcije = 'izlaz' THEN
-		IF l_postoji = 0 THEN
-				INSERT INTO mp_stanje_skladista_vina VALUES(p_lokacija, p_kolicina);
-			ELSE
-				UPDATE mp_stanje_skladista_vina 
-				SET kolicina = kolicina - p_kolicina WHERE lokacija = p_lokacija;
-			END IF;
-    
-	END IF;
-    SET SQL_SAFE_UPDATES = 1;
-END //
-DELIMITER ;
-
-
-DELIMITER //
-CREATE TRIGGER ai_skladiste_vino
-	AFTER INSERT ON skladiste_vino
-    FOR EACH ROW
-BEGIN
-	CALL azuriraj_stanje(new.tip_transakcije, new.lokacija, new.kolicina);
-END //
-DELIMITER ;
-
 
 
 
@@ -1413,6 +1348,26 @@ GROUP BY v.id, v.naziv, v.vrsta
 ORDER BY trenutno_na_skladistu DESC
 LIMIT 1;
 
+-- Triggeri
+
+-- trigger za provjeru količine pri ulazu u skladište repromaterijala
+
+DELIMITER //
+CREATE TRIGGER bi_negativna_kolicina
+BEFORE INSERT ON skladiste_repromaterijal
+FOR EACH ROW
+BEGIN
+    IF NEW.kolicina < 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Količina ne može biti negativna.';
+    END IF;
+END //
+DELIMITER ;
+
+--
+CREATE TABLE mp_stanje_skladista_vina (
+	lokacija VARCHAR(100),
+    kolicina INT
+);
 
 -- trigger za promjenu statusa u "Primljena" pri izradi nove stavke narudžbe
 
@@ -1427,7 +1382,54 @@ BEGIN
 END //
 DELIMITER ;
 
+-- PROCEDURA
 
+-- Procedura za ažuriranje stanja skladišta vina
+
+DELIMITER //
+CREATE PROCEDURE azuriraj_stanje(IN p_tip_transakcije ENUM('ulaz', 'izlaz'), IN p_lokacija VARCHAR(100), IN p_kolicina INT)
+
+BEGIN
+	DECLARE l_postoji INT;
+    SELECT COUNT(*) INTO l_postoji
+		FROM mp_stanje_skladista_vina
+        WHERE lokacija = p_lokacija;
+	SET SQL_SAFE_UPDATES = 0;   
+	IF p_tip_transakcije = 'ulaz' THEN
+		IF l_postoji = 0 THEN
+			INSERT INTO mp_stanje_skladista_vina VALUES(p_lokacija, p_kolicina);
+		ELSE
+			UPDATE mp_stanje_skladista_vina 
+            SET kolicina = kolicina + p_kolicina WHERE lokacija = p_lokacija;
+        END IF;
+	END IF;
+    IF p_tip_transakcije = 'izlaz' THEN
+		IF l_postoji = 0 THEN
+				INSERT INTO mp_stanje_skladista_vina VALUES(p_lokacija, p_kolicina);
+			ELSE
+				UPDATE mp_stanje_skladista_vina 
+				SET kolicina = kolicina - p_kolicina WHERE lokacija = p_lokacija;
+			END IF;
+    
+	END IF;
+    SET SQL_SAFE_UPDATES = 1;
+END //
+DELIMITER ;
+
+
+DELIMITER //
+CREATE TRIGGER ai_skladiste_vino
+	AFTER INSERT ON skladiste_vino
+    FOR EACH ROW
+BEGIN
+	CALL azuriraj_stanje(new.tip_transakcije, new.lokacija, new.kolicina);
+END //
+DELIMITER ;
+
+
+
+
+-- Funkcije
 -- funkcija za vraćanje statusa narudžbe po ID-u
 DELIMITER //
 
@@ -1465,6 +1467,7 @@ BEGIN
 END //
 DELIMITER ;
 
+-- Transakcije
 -- 1. Transakcija, ažuriranje statusa narudžbe u 'Otkazana' i brisanje povezanog računa
 START TRANSACTION;
 
@@ -1476,6 +1479,27 @@ DELETE FROM racun
 WHERE id_zahtjev_za_narudzbu = 1;
 
 COMMIT;
+
+
+
+
+-- Pogledi:
+
+-- Pogled, svi prijevoznici s adresom u Zagrebu
+CREATE VIEW prijevoznici_adresa_zagreb AS
+SELECT
+    id, naziv, adresa, email, telefon, oib
+FROM prijevoznik
+WHERE adresa LIKE '%Zagreb%'
+  AND adresa NOT LIKE 'Zagrebačka cesta%';
+SELECT * FROM prijevoznici_adresa_zagreb;
+
+-- Pogled, proizvodi s cijenom većom od prosjećne
+
+CREATE VIEW proizvodi_iznad_prosjeka AS
+SELECT *
+FROM proizvod
+WHERE cijena > (SELECT AVG(cijena) FROM proizvod);
 
 
 
@@ -1927,6 +1951,9 @@ BEGIN
     RETURN broj_transporta;
 END//
 DELIMITER ;
+
+
+
 
 
 
