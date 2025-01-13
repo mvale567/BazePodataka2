@@ -318,7 +318,7 @@ CREATE TRIGGER bi_stavka_narudzbe
 	BEFORE INSERT ON stavka_narudzbe
     FOR EACH ROW
 BEGIN
-	DECLARE cijena_proizvoda DECIMAL(8,2);
+	DECLARE cijena_proizvoda DECIMAL(10,2);
     
     SELECT cijena INTO cijena_proizvoda
 		FROM proizvod
@@ -994,10 +994,10 @@ VALUES
 (15, 5, '2024-11-02', 'Završena'),
 (7, 20, '2024-11-05', 'Završena'),
 (19, 9, '2024-11-08', 'Završena'),
-(2, 17, '2024-11-11', 'Završena'),
+(2, 17, '2024-11-08', 'Završena'),
 (25, 20, '2024-11-15', 'Završena'),
 (12, 5, '2024-11-18', 'Završena'),
-(6, 9, '2024-11-22', 'Završena'),
+(6, 9, '2024-11-25', 'Završena'),
 (30, 17, '2024-11-25', 'Završena'),
 (3, 5, '2024-11-28', 'Završena'),
 (9, 20, '2024-12-01', 'Završena'),
@@ -1008,8 +1008,8 @@ VALUES
 (1, 9, '2024-12-16', 'Završena'),
 (28, 17, '2024-12-19', 'Završena'),
 (16, 20, '2024-12-22', 'Završena'),
-(4, 9, '2024-12-25', 'Završena'),
-(21, 5, '2024-12-28', 'Završena'),
+(4, 9, '2024-12-22', 'Završena'),
+(21, 5, '2024-12-22', 'Završena'),
 (18, 17, '2025-01-02', 'Primljena'),
 (8, 9, '2025-01-03', 'Otkazana'),
 (14, 5, '2025-01-04', 'Na čekanju'),
@@ -1112,7 +1112,7 @@ VALUES
 (27, 31, 310), (27, 2, 380), (27, 9, 730), (27, 19, 600),
 
 -- Narudžba 28
-(28, 22, 710), (28, 6, 320), (28, 12, 290),
+(28, 32, 710), (28, 6, 320), (28, 12, 290),
 
 -- Narudžba 29
 (29, 15, 280), (29, 26, 690), (29, 30, 740),
@@ -1127,7 +1127,7 @@ VALUES
 (32, 29, 730), (32, 16, 320), (32, 28, 780),
 
 -- Narudžba 33
-(33, 1, 310), (33, 4, 710),
+(33, 1, 310), (33, 33, 710),
 
 -- Narudžba 34
 (34, 8, 740), (34, 11, 690), (34, 27, 810),
@@ -1259,7 +1259,7 @@ UNION ALL
 SELECT sn.id_proizvod, DATE_ADD(zn.datum_zahtjeva, INTERVAL 7 DAY) AS datum, 'izlaz' AS tip_transakcije, sn.kolicina, 'Skladište E' AS lokacija
 	FROM stavka_narudzbe sn
 	JOIN zahtjev_za_narudzbu zn ON sn.id_zahtjev_za_narudzbu = zn.id
-	WHERE zn.status_narudzbe IN ('Poslana', 'Završena')
+	WHERE zn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena')
 	ORDER BY datum;
 
 
@@ -1289,12 +1289,10 @@ INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca, datum_polaska, 
 VALUES
 (6, 'ZG1234AA', 'Ivan Horvat', '2024-11-09', '2024-11-09', 1860, 'Obavljen'),
 (4, 'ZG5678BB', 'Marko Marić', '2024-11-12', '2024-11-12', 1070, 'Obavljen'),
-(1, 'KA9012CC', 'Stjepan Kovaček', '2024-11-15', '2024-11-15', 2050, 'Obavljen'),
-(5, 'ZG3456DD', 'Josip Kovač', '2024-11-18', '2024-11-18', 2560, 'Obavljen'),
+(1, 'KA9012CC', 'Stjepan Kovaček', '2024-11-15', '2024-11-15', 4610, 'Obavljen'),
 (3, 'KA7890EE', 'Ante Vuk', '2024-11-22', '2024-11-22', 260, 'Obavljen'),
 (2, 'ZG1122FF', 'Krešimir Lončar', '2024-11-25', '2024-11-25', 1900, 'Obavljen'),
-(6, 'ZG5566GG', 'Tomislav Radić', '2024-11-29', '2024-11-29', 2590, 'Obavljen'),
-(1, 'KA9999HH', 'Fran Jurić', '2024-12-02', '2024-12-02', 1040, 'Obavljen'),
+(1, 'KA9999HH', 'Fran Jurić', '2024-12-02', '2024-12-02', 3630, 'Obavljen'),
 (5, 'ZG3333II', 'Filip Zadro', '2024-12-05', '2024-12-05', 2690, 'Obavljen'),
 (2, 'ZG4444JJ', 'Hrvoje Bašić', '2024-12-08', '2024-12-08', 1030, 'Obavljen'),
 (4, 'KA5555KK', 'Zoran Božić', '2024-12-11', '2024-12-11', 2640, 'Obavljen'),
@@ -1303,9 +1301,7 @@ VALUES
 (4, 'ZG8888NN', 'Damir Vlašić', '2024-12-20', '2024-12-20', 1820, 'Obavljen'),
 (5, 'ZG9999OO', 'Zvonimir Kovačić', '2024-12-23', '2024-12-23', 2970, 'Obavljen'),
 (1, 'ZG1111PP', 'Ivica Barić', '2024-12-26', '2024-12-26', 1030, 'Obavljen'),
-(2, 'KA2222QQ', 'Viktor Grgić', '2024-12-29', '2024-12-29', 1960, 'Obavljen'),
-(6, 'ZG3333RR', 'Marin Škaro', '2025-01-01', '2025-01-01', 280, 'Obavljen'),
-(4, 'ZG4444SS', 'Filip Marković', '2025-01-04', '2025-01-04', 1800, 'Obavljen'),
+(2, 'KA2222QQ', 'Viktor Grgić', '2024-12-29', '2024-12-29', 4040, 'Obavljen'),
 (5, 'ZG6666UU', 'Franjo Jurić', '2025-01-12', '2025-01-12', 330, 'Obavljen'),
 (3, 'KA7777VV', 'Ante Vuk', '2025-01-13', NULL, 2660, 'U tijeku'),
 (1, 'ZG8888WW', 'Zvonimir Kovačić', '2025-01-18', NULL, 1710, 'U tijeku'),
@@ -1316,6 +1312,72 @@ INSERT INTO racun (id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
 SELECT 16 AS id_zaposlenik, zzn.id AS id_zahtjev_za_narudzbu, DATE_ADD(zzn.datum_zahtjeva, INTERVAL 3 DAY) AS datum_racuna
 	FROM zahtjev_za_narudzbu zzn
 	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
+
+
+CREATE TABLE prodani_proizvodi (
+	id_proizvod INTEGER PRIMARY KEY,
+    kolicina INTEGER,
+    ukupni_iznos DECIMAL(10,2),
+    CONSTRAINT prodani_proizvodi__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
+);
+
+
+DELIMITER //
+CREATE PROCEDURE azuriraj_prodane_proizvode (IN p_id_proizvod INTEGER, IN p_kolicina INTEGER, IN p_ukupni_iznos DECIMAL(10,2))
+BEGIN
+	INSERT INTO prodani_proizvodi VALUES (p_id_proizvod, p_kolicina, p_ukupni_iznos)
+	ON DUPLICATE KEY UPDATE 
+		kolicina = kolicina + VALUES(kolicina),
+        ukupni_iznos = ukupni_iznos + VALUES(ukupni_iznos);
+END //
+DELIMITER ;
+
+
+DELIMITER //
+CREATE PROCEDURE azuriraj_prodaju (IN p_pocetni_datum DATE, IN p_zavrsni_datum DATE)
+BEGIN
+	DECLARE l_id_proizvod, l_kolicina INTEGER;
+    DECLARE l_ukupni_iznos DECIMAL(10,2);
+	DECLARE handler_broj INTEGER DEFAULT 0;
+    
+    DECLARE cur CURSOR FOR
+		SELECT id_proizvod, kolicina, iznos_stavke
+			FROM stavka_narudzbe
+			WHERE id_zahtjev_za_narudzbu IN (
+				SELECT id_zahtjev_za_narudzbu
+					FROM racun
+					WHERE datum_racuna BETWEEN p_pocetni_datum AND p_zavrsni_datum
+				);
+    DECLARE CONTINUE HANDLER FOR NOT FOUND 
+    BEGIN
+		SET handler_broj = 1;
+    END;
+    
+    OPEN cur;
+    
+    petlja: LOOP
+		FETCH cur INTO l_id_proizvod, l_kolicina, l_ukupni_iznos;
+        
+        IF handler_broj = 1 THEN
+			LEAVE petlja;
+        END IF;
+    
+		CALL azuriraj_prodane_proizvode(l_id_proizvod, l_kolicina, l_ukupni_iznos);
+        
+    END LOOP petlja;
+    
+    CLOSE cur;
+END //
+DELIMITER ;
+
+
+SET @najraniji_datum = (SELECT MIN(datum_racuna) FROM racun);
+SET @najnoviji_datum = (SELECT MAX(datum_racuna) FROM racun);
+
+
+CALL azuriraj_prodaju(@najraniji_datum, @najnoviji_datum);
+
+
 
 
 ----------------------------------------------- VID
@@ -1467,7 +1529,12 @@ BEGIN
 END //
 DELIMITER ;
 
+<<<<<<< Updated upstream
 -- Transakcije
+=======
+SELECT ukupno_narudzbe();
+
+>>>>>>> Stashed changes
 -- 1. Transakcija, ažuriranje statusa narudžbe u 'Otkazana' i brisanje povezanog računa
 START TRANSACTION;
 
@@ -1810,6 +1877,9 @@ UPDATE zaposlenik SET telefon = '+385919876543' WHERE id = 15;
 
 COMMIT;
 
+
+
+
 -- MARTA
 -- upiti
 
@@ -1952,6 +2022,7 @@ BEGIN
 END//
 DELIMITER ;
 
+<<<<<<< Updated upstream
 
 
 
@@ -1962,3 +2033,5 @@ DELIMITER ;
 
 
 
+=======
+>>>>>>> Stashed changes
