@@ -1314,18 +1314,21 @@ SELECT 16 AS id_zaposlenik, zzn.id AS id_zahtjev_za_narudzbu, DATE_ADD(zzn.datum
 	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
 
 
-CREATE TABLE prodani_proizvodi (
-	id_proizvod INTEGER PRIMARY KEY,
+CREATE TABLE kvartalni_pregled_prodaje (
+	id_proizvod INTEGER,
     kolicina INTEGER,
     ukupni_iznos DECIMAL(10,2),
-    CONSTRAINT prodani_proizvodi__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
+    pocetni_datum DATE,
+    zavrsni_datum DATE,
+    CONSTRAINT kvartalni_pregled_prodaje_pk PRIMARY KEY (id_proizvod, pocetni_datum, zavrsni_datum),
+    CONSTRAINT kvartalni_pregled_prodaje__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
 );
 
 
 DELIMITER //
-CREATE PROCEDURE azuriraj_prodane_proizvode (IN p_id_proizvod INTEGER, IN p_kolicina INTEGER, IN p_ukupni_iznos DECIMAL(10,2))
+CREATE PROCEDURE azuriraj_prodane_proizvode (IN p_id_proizvod INTEGER, IN p_kolicina INTEGER, IN p_ukupni_iznos DECIMAL(10,2), p_pocetni_datum DATE, p_zavrsni_datum DATE)
 BEGIN
-	INSERT INTO prodani_proizvodi VALUES (p_id_proizvod, p_kolicina, p_ukupni_iznos)
+	INSERT INTO kvartalni_pregled_prodaje VALUES (p_id_proizvod, p_kolicina, p_ukupni_iznos, p_pocetni_datum, p_zavrsni_datum)
 	ON DUPLICATE KEY UPDATE 
 		kolicina = kolicina + VALUES(kolicina),
         ukupni_iznos = ukupni_iznos + VALUES(ukupni_iznos);
@@ -1334,7 +1337,7 @@ DELIMITER ;
 
 
 DELIMITER //
-CREATE PROCEDURE azuriraj_prodaju (IN p_pocetni_datum DATE, IN p_zavrsni_datum DATE)
+CREATE PROCEDURE azuriraj_prodaju(IN p_pocetni_datum DATE, IN p_zavrsni_datum DATE)
 BEGIN
 	DECLARE l_id_proizvod, l_kolicina INTEGER;
     DECLARE l_ukupni_iznos DECIMAL(10,2);
@@ -1362,7 +1365,7 @@ BEGIN
 			LEAVE petlja;
         END IF;
     
-		CALL azuriraj_prodane_proizvode(l_id_proizvod, l_kolicina, l_ukupni_iznos);
+		CALL azuriraj_prodane_proizvode(l_id_proizvod, l_kolicina, l_ukupni_iznos, p_pocetni_datum, p_zavrsni_datum);
         
     END LOOP petlja;
     
@@ -1370,13 +1373,39 @@ BEGIN
 END //
 DELIMITER ;
 
+DELIMITER //
+CREATE TRIGGER bi_kvartalni_pregled_prodaje
+	BEFORE INSERT ON kvartalni_pregled_prodaje
+    FOR EACH ROW
+BEGIN
+	IF DATE_FORMAT(new.pocetni_datum, '%d.%m.') NOT IN ('01.01.', '01.04.', '01.07.', '01.10.') THEN
+		SIGNAL SQLSTATE '45008' SET MESSAGE_TEXT = 'Neispravan unos, početni datum mora biti početak kvartala!';
+	END IF;
+	
+    IF DATE_FORMAT(new.zavrsni_datum, '%d.%m.') NOT IN ('31.03.', '30.6.', '30.09.', '31.12.') THEN
+		SIGNAL SQLSTATE '45009' SET MESSAGE_TEXT = 'Neispravan unos, završni datum mora biti završetak kvartala!';
+	END IF;
+END //
+DELIMITER ;
 
-SET @najraniji_datum = (SELECT MIN(datum_racuna) FROM racun);
-SET @najnoviji_datum = (SELECT MAX(datum_racuna) FROM racun);
 
+CALL azuriraj_prodaju(STR_TO_DATE('01.10.2024.', '%d.%m.%Y.'), STR_TO_DATE('31.12.2024.', '%d.%m.%Y.'));
 
-CALL azuriraj_prodaju(@najraniji_datum, @najnoviji_datum);
+SELECT * FROM kvartalni_pregled_prodaje;
 
+CREATE EVENT kvartalni_izvjestaj
+ON SCHEDULE EVERY 3 MONTH
+STARTS '2025-01-01 00:00:00'
+DO	
+	CALL azuriraj_prodaju(CURDATE() - INTERVAL 3 MONTH, CURDATE() - INTERVAL 1 DAY);
+
+SHOW EVENTS;
+
+SET @datumrani = (SELECT MIN(datum_racuna) FROM racun);
+SET @datumkasni = (SELECT MAX(datum_racuna) FROM racun);
+-- CALL azuriraj_prodaju(@datumrani, @datumkasni);
+
+SELECT * FROM kvartalni_pregled_prodaje;
 
 
 
@@ -1529,12 +1558,10 @@ BEGIN
 END //
 DELIMITER ;
 
-<<<<<<< Updated upstream
--- Transakcije
-=======
-SELECT ukupno_narudzbe();
 
->>>>>>> Stashed changes
+-- Transakcije
+
+
 -- 1. Transakcija, ažuriranje statusa narudžbe u 'Otkazana' i brisanje povezanog računa
 START TRANSACTION;
 
@@ -1919,6 +1946,8 @@ GROUP BY p.naziv;
 
 -- transakcije
 
+SELECT * FROM transport;
+
 -- 1. Transakcija: Dodavanje novog transporta i ažuriranje broja transporta prijevoznika
 START TRANSACTION;
 INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca, datum_polaska, datum_dolaska, kolicina, status_transporta)
@@ -2022,16 +2051,3 @@ BEGIN
 END//
 DELIMITER ;
 
-<<<<<<< Updated upstream
-
-
-
-
-
-
-
-
-
-
-=======
->>>>>>> Stashed changes
