@@ -109,6 +109,31 @@ CREATE TABLE repromaterijal (
 
 
 
+----------------------------------------------- MARTA
+
+CREATE TABLE prijevoznik (
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+	naziv VARCHAR(50),
+	adresa VARCHAR(50),
+	email VARCHAR(50),
+	telefon VARCHAR(50),
+	oib CHAR(11) UNIQUE
+);
+
+CREATE TABLE transport (
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+    id_prijevoznik INTEGER NOT NULL,
+	registracija VARCHAR(50) NOT NULL,
+	ime_vozaca VARCHAR(50) NOT NULL,
+	datum_polaska DATE NOT NULL,
+	datum_dolaska DATE,
+	kolicina INTEGER NOT NULL,
+	status_transporta ENUM('Obavljen', 'U tijeku', 'Otkazan') NOT NULL,
+	FOREIGN KEY (id_prijevoznik) REFERENCES prijevoznik(id)
+);
+
+
+
 ----------------------------------------------- LAURA
 CREATE TABLE repromaterijal_proizvod (
     id INTEGER AUTO_INCREMENT PRIMARY KEY,
@@ -124,11 +149,13 @@ CREATE TABLE zahtjev_za_narudzbu (
     id INTEGER AUTO_INCREMENT PRIMARY KEY,
     id_kupac INTEGER NOT NULL,
     id_zaposlenik INTEGER NOT NULL,
+	id_transport INTEGER,
     datum_zahtjeva DATE NOT NULL,
     ukupni_iznos DECIMAL(8, 2),
     status_narudzbe ENUM('Primljena', 'U obradi', 'Na čekanju', 'Spremna za isporuku', 'Poslana', 'Završena', 'Otkazana') NOT NULL DEFAULT 'Na čekanju',
     CONSTRAINT zahtjev_za_narudzbu__kupac_fk FOREIGN KEY (id_kupac) REFERENCES kupac(id),
-    CONSTRAINT zahtjev_za_narudzbu__zaposlenik_fk FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id)
+    CONSTRAINT zahtjev_za_narudzbu__zaposlenik_fk FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id),
+    FOREIGN KEY (id_transport) REFERENCES transport(id)
 );
 
 
@@ -142,6 +169,19 @@ CREATE TABLE stavka_narudzbe (
     CONSTRAINT stavka_narudzbe__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
     CONSTRAINT stavka_narudzbe_uk UNIQUE (id_zahtjev_za_narudzbu, id_proizvod),
     CONSTRAINT stavka_narudzbe_kolicina_ck CHECK (kolicina > 0)
+);
+
+
+
+----------------------------------------------- MARTA
+
+CREATE TABLE racun (
+	id INTEGER AUTO_INCREMENT PRIMARY KEY,
+    id_zaposlenik INTEGER NOT NULL,
+	id_zahtjev_za_narudzbu INTEGER NOT NULL UNIQUE,
+	datum_racuna DATE NOT NULL,
+	FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id),
+	FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id)
 );
 
 
@@ -202,41 +242,6 @@ CREATE TABLE zahtjev_za_nabavu (
 
 
 
--- MARTA
-CREATE TABLE prijevoznik (
-	id INTEGER AUTO_INCREMENT PRIMARY KEY,
-	naziv VARCHAR(50),
-	adresa VARCHAR(50),
-	email VARCHAR(50),
-	telefon VARCHAR(50),
-	oib CHAR(11) UNIQUE
-);
-
-CREATE TABLE transport (
-	id INTEGER AUTO_INCREMENT PRIMARY KEY,
-    id_prijevoznik INTEGER NOT NULL,
-	registracija VARCHAR(50) NOT NULL,
-	ime_vozaca VARCHAR(50) NOT NULL,
-	datum_polaska DATE NOT NULL,
-	datum_dolaska DATE,
-	kolicina INTEGER NOT NULL,
-	status_transporta ENUM('Obavljen', 'U tijeku', 'Otkazan') NOT NULL,
-	FOREIGN KEY (id_prijevoznik) REFERENCES prijevoznik(id)
-);
-
-CREATE TABLE racun (
-	id INTEGER AUTO_INCREMENT PRIMARY KEY,
-    id_zaposlenik INTEGER NOT NULL,
-	id_zahtjev_za_narudzbu INTEGER NOT NULL UNIQUE,
-	datum_racuna DATE NOT NULL,
-	FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id),
-	FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id)
-);
-
-
-
-
-
 ----------------------------------------------- DAVOR
 
 -- funkcija koja vraća broj zaposlenika u određenom odjelu
@@ -258,6 +263,7 @@ END//
 DELIMITER ;
 
 SELECT broj_zaposlenika_u_odjelu(2);
+
 
 
 ----------------------------------------------- LAURA
@@ -872,7 +878,40 @@ INSERT INTO repromaterijal (id_dobavljac, vrsta, opis, jedinicna_cijena) VALUES
 (4, 'Naljepnica', 'Naljepnica za Tamni Val 1.00 L, sjajni finiš', 0.15);
 
 
-SELECT * FROM repromaterijal;
+INSERT INTO prijevoznik (naziv, adresa, email, telefon, oib)
+VALUES
+('Transport d.o.o.', 'Zagrebačka avenija 7, Zagreb', 'info@transport.hr', '051987654', '11223344556'),
+('CargoPlus', 'Savska cesta 5, Zagreb', 'info@cargoplus.hr', '051555555', '11223344577'),
+('Brzo & Sigurno', 'Krapinska 10, Zabok', 'info@brzoisigurno.hr', '012345678', '11223344588'),
+('Transport Vuković', 'Slavonska avenija 30, Zagreb', 'vukovic@email.com', '021876555', '11223344599'),
+('LogistikTransport d.o.o.', 'Zagorska ulica 10, Krapina', 'logistik@email.com', '031456789', '11223344600'),
+('Brza Dostava d.o.o.', 'Zagrebačka cesta 8, Sesvete', 'brzi@email.com', '023123456', '11223344611'),
+('SafeTrans d.o.o.', 'Varaždinska ulica 12, Donja Stubica', 'safetrans@email.com', '013112233', '11223344622');
+
+
+INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca, datum_polaska, datum_dolaska, kolicina, status_transporta)
+VALUES
+(6, 'ZG1234AA', 'Ivan Horvat', '2024-11-09', '2024-11-09', 1860, 'Obavljen'),
+(4, 'ZG5678BB', 'Marko Marić', '2024-11-12', '2024-11-12', 1070, 'Obavljen'),
+(1, 'KA9012CC', 'Stjepan Kovaček', '2024-11-15', '2024-11-15', 4610, 'Obavljen'),
+(3, 'KA7890EE', 'Ante Vuk', '2024-11-22', '2024-11-22', 260, 'Obavljen'),
+(2, 'ZG1122FF', 'Krešimir Lončar', '2024-11-25', '2024-11-25', 1700, 'Obavljen'),
+(1, 'KA9999HH', 'Fran Jurić', '2024-12-02', '2024-12-02', 3430, 'Obavljen'),
+(5, 'ZG3333II', 'Filip Zadro', '2024-12-05', '2024-12-05', 2690, 'Obavljen'),
+(2, 'ZG4444JJ', 'Hrvoje Bašić', '2024-12-08', '2024-12-08', 1030, 'Obavljen'),
+(4, 'KA5555KK', 'Zoran Božić', '2024-12-11', '2024-12-11', 2640, 'Obavljen'),
+(3, 'ZG6666LL', 'Tihomir Pavlović', '2024-12-14', '2024-12-14', 1460, 'Obavljen'),
+(6, 'KA7777MM', 'Petar Krpan', '2024-12-17', '2024-12-17', 720, 'Obavljen'),
+(4, 'ZG8888NN', 'Damir Vlašić', '2024-12-20', '2024-12-20', 1520, 'Obavljen'),
+(5, 'ZG9999OO', 'Zvonimir Kovačić', '2024-12-23', '2024-12-23', 2450, 'Obavljen'),
+(1, 'ZG1111PP', 'Ivica Barić', '2024-12-26', '2024-12-26', 930, 'Obavljen'),
+(2, 'KA2222QQ', 'Viktor Grgić', '2024-12-29', '2024-12-29', 3940, 'Obavljen'),
+(5, 'ZG6666UU', 'Franjo Jurić', '2025-01-12', '2025-01-12', 330, 'Obavljen'),
+(3, 'KA7777VV', 'Ante Vuk', '2025-01-13', NULL, 2260, 'U tijeku'),
+(1, 'ZG8888WW', 'Zvonimir Kovačić', '2025-01-18', NULL, 1710, 'U tijeku'),
+(2, 'ZG9999XX', 'Filip Marković', '2025-01-22', NULL, 2240, 'U tijeku');
+
+
 INSERT INTO repromaterijal_proizvod (id_proizvod, id_repromaterijal)
 VALUES
 -- Zagorska Graševina (Berbe 1 i 2)
@@ -989,43 +1028,43 @@ VALUES
 (33, 34); -- Naljepnica za Tamni Val 1.00 L
 
 
-INSERT INTO zahtjev_za_narudzbu (id_kupac, id_zaposlenik, datum_zahtjeva, status_narudzbe)
+INSERT INTO zahtjev_za_narudzbu (id_kupac, id_zaposlenik, id_transport, datum_zahtjeva, status_narudzbe)
 VALUES
-(15, 5, '2024-11-02', 'Završena'),
-(7, 20, '2024-11-05', 'Završena'),
-(19, 9, '2024-11-08', 'Završena'),
-(2, 17, '2024-11-08', 'Završena'),
-(25, 20, '2024-11-15', 'Završena'),
-(12, 5, '2024-11-18', 'Završena'),
-(6, 9, '2024-11-25', 'Završena'),
-(30, 17, '2024-11-25', 'Završena'),
-(3, 5, '2024-11-28', 'Završena'),
-(9, 20, '2024-12-01', 'Završena'),
-(22, 9, '2024-12-04', 'Završena'),
-(10, 17, '2024-12-07', 'Završena'),
-(5, 20, '2024-12-10', 'Završena'),
-(27, 5, '2024-12-13', 'Završena'),
-(1, 9, '2024-12-16', 'Završena'),
-(28, 17, '2024-12-19', 'Završena'),
-(16, 20, '2024-12-22', 'Završena'),
-(4, 9, '2024-12-22', 'Završena'),
-(21, 5, '2024-12-22', 'Završena'),
-(18, 17, '2025-01-02', 'Primljena'),
-(8, 9, '2025-01-03', 'Otkazana'),
-(14, 5, '2025-01-04', 'Na čekanju'),
-(26, 20, '2025-01-05', 'Završena'),
-(29, 17, '2025-01-06', 'Poslana'),
-(11, 9, '2025-01-07', 'Primljena'),
-(13, 5, '2025-01-08', 'U obradi'),
-(17, 20, '2025-01-09', 'Otkazana'),
-(24, 17, '2025-01-10', 'Spremna za isporuku'),
-(20, 9, '2025-01-11', 'Poslana'),
-(23, 5, '2025-01-12', 'Primljena'),
-(30, 20, '2025-01-13', 'U obradi'),
-(19, 17, '2025-01-14', 'Na čekanju'),
-(6, 9, '2025-01-14', 'Spremna za isporuku'),
-(15, 5, '2025-01-15', 'Poslana'),
-(7, 20, '2025-01-15', 'Primljena');
+(15, 5, 1, '2024-11-02', 'Završena'),
+(7, 20, 2, '2024-11-05', 'Završena'),
+(19, 9, 3, '2024-11-08', 'Završena'),
+(2, 17, 3, '2024-11-08', 'Završena'),
+(25, 20, 4, '2024-11-15', 'Završena'),
+(12, 5, 5, '2024-11-18', 'Završena'),
+(6, 9, 6, '2024-11-25', 'Završena'),
+(30, 17, 6, '2024-11-25', 'Završena'),
+(3, 5, 7, '2024-11-28', 'Završena'),
+(9, 20, 8, '2024-12-01', 'Završena'),
+(22, 9, 9, '2024-12-04', 'Završena'),
+(10, 17, 10, '2024-12-07', 'Završena'),
+(5, 20, 11, '2024-12-10', 'Završena'),
+(27, 5, 12, '2024-12-13', 'Završena'),
+(1, 9, 13, '2024-12-16', 'Završena'),
+(28, 17, 14, '2024-12-19', 'Završena'),
+(16, 20, 15, '2024-12-22', 'Završena'),
+(4, 9, 15, '2024-12-22', 'Završena'),
+(21, 5, 15, '2024-12-22', 'Završena'),
+(18, 17, NULL, '2025-01-02', 'Primljena'),
+(8, 9, NULL, '2025-01-03', 'Otkazana'),
+(14, 5, NULL, '2025-01-04', 'Na čekanju'),
+(26, 20, 16, '2025-01-05', 'Završena'),
+(29, 17, 17, '2025-01-06', 'Poslana'),
+(11, 9, NULL, '2025-01-07', 'Primljena'),
+(13, 5, NULL, '2025-01-08', 'U obradi'),
+(17, 20, NULL, '2025-01-09', 'Otkazana'),
+(24, 17, NULL, '2025-01-10', 'Spremna za isporuku'),
+(20, 9, 18, '2025-01-11', 'Poslana'),
+(23, 5, NULL, '2025-01-12', 'Primljena'),
+(30, 20, NULL, '2025-01-13', 'U obradi'),
+(19, 17, NULL, '2025-01-14', 'Na čekanju'),
+(6, 9, NULL, '2025-01-14', 'Spremna za isporuku'),
+(15, 5, 19, '2025-01-15', 'Poslana'),
+(7, 20, NULL, '2025-01-15', 'Primljena');
 
 
 INSERT INTO stavka_narudzbe (id_zahtjev_za_narudzbu, id_proizvod, kolicina)
@@ -1176,7 +1215,6 @@ VALUES
 
 INSERT INTO skladiste_vino (id_berba, datum, tip_transakcije, kolicina, lokacija)
 VALUES
-
 -- Ulazne transakcije za berbu 2023
 (1, '2023-08-15', 'ulaz', 14500, 'Skladište A'), 
 (3, '2023-08-20', 'ulaz', 14700, 'Skladište B'), 
@@ -1230,11 +1268,6 @@ VALUES
 (10, '2024-10-30', 'izlaz', 2447.5, 'Skladište A'),
 (11, '2024-10-30', 'izlaz', 2420.0, 'Skladište B');
 
-SELECT * FROM skladiste_vino;
-SELECT * FROM stanje_skladista_vina;
-
--- UPDATE skladiste_vino SET id_berba = 2 WHERE id = 1;
--- DELETE FROM skladiste_vino WHERE id = 1;
 
 
 -------------------------------------------------------- LAURA 
@@ -1256,10 +1289,10 @@ INSERT INTO skladiste_proizvod (id_proizvod, datum, tip_transakcije, kolicina, l
 SELECT id_proizvod, zavrsetak_punjenja AS datum, 'ulaz' AS tip_transakcije, kolicina, 'Skladište E' AS lokacija
 	FROM punjenje
 UNION ALL
-SELECT sn.id_proizvod, DATE_ADD(zn.datum_zahtjeva, INTERVAL 7 DAY) AS datum, 'izlaz' AS tip_transakcije, sn.kolicina, 'Skladište E' AS lokacija
+SELECT sn.id_proizvod, DATE_ADD(zzn.datum_zahtjeva, INTERVAL 7 DAY) AS datum, 'izlaz' AS tip_transakcije, sn.kolicina, 'Skladište E' AS lokacija
 	FROM stavka_narudzbe sn
-	JOIN zahtjev_za_narudzbu zn ON sn.id_zahtjev_za_narudzbu = zn.id
-	WHERE zn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena')
+	JOIN zahtjev_za_narudzbu zzn ON sn.id_zahtjev_za_narudzbu = zzn.id
+	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena')
 	ORDER BY datum;
 
 
@@ -1274,45 +1307,11 @@ END AS id_zaposlenik
 	WHERE tip_transakcije = 'ulaz';
 
 
-INSERT INTO prijevoznik (naziv, adresa, email, telefon, oib)
-VALUES
-('Transport d.o.o.', 'Zagrebačka avenija 7, Zagreb', 'info@transport.hr', '051987654', '11223344556'),
-('CargoPlus', 'Savska cesta 5, Zagreb', 'info@cargoplus.hr', '051555555', '11223344577'),
-('Brzo & Sigurno', 'Krapinska 10, Zabok', 'info@brzoisigurno.hr', '012345678', '11223344588'),
-('Transport Vuković', 'Slavonska avenija 30, Zagreb', 'vukovic@email.com', '021876555', '11223344599'),
-('LogistikTransport d.o.o.', 'Zagorska ulica 10, Krapina', 'logistik@email.com', '031456789', '11223344600'),
-('Brza Dostava d.o.o.', 'Zagrebačka cesta 8, Sesvete', 'brzi@email.com', '023123456', '11223344611'),
-('SafeTrans d.o.o.', 'Varaždinska ulica 12, Donja Stubica', 'safetrans@email.com', '013112233', '11223344622');
-
-
-INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca, datum_polaska, datum_dolaska, kolicina, status_transporta)
-VALUES
-(6, 'ZG1234AA', 'Ivan Horvat', '2024-11-09', '2024-11-09', 1860, 'Obavljen'),
-(4, 'ZG5678BB', 'Marko Marić', '2024-11-12', '2024-11-12', 1070, 'Obavljen'),
-(1, 'KA9012CC', 'Stjepan Kovaček', '2024-11-15', '2024-11-15', 4610, 'Obavljen'),
-(3, 'KA7890EE', 'Ante Vuk', '2024-11-22', '2024-11-22', 260, 'Obavljen'),
-(2, 'ZG1122FF', 'Krešimir Lončar', '2024-11-25', '2024-11-25', 1900, 'Obavljen'),
-(1, 'KA9999HH', 'Fran Jurić', '2024-12-02', '2024-12-02', 3630, 'Obavljen'),
-(5, 'ZG3333II', 'Filip Zadro', '2024-12-05', '2024-12-05', 2690, 'Obavljen'),
-(2, 'ZG4444JJ', 'Hrvoje Bašić', '2024-12-08', '2024-12-08', 1030, 'Obavljen'),
-(4, 'KA5555KK', 'Zoran Božić', '2024-12-11', '2024-12-11', 2640, 'Obavljen'),
-(3, 'ZG6666LL', 'Tihomir Pavlović', '2024-12-14', '2024-12-14', 1460, 'Obavljen'),
-(6, 'KA7777MM', 'Petar Krpan', '2024-12-17', '2024-12-17', 720, 'Obavljen'),
-(4, 'ZG8888NN', 'Damir Vlašić', '2024-12-20', '2024-12-20', 1820, 'Obavljen'),
-(5, 'ZG9999OO', 'Zvonimir Kovačić', '2024-12-23', '2024-12-23', 2970, 'Obavljen'),
-(1, 'ZG1111PP', 'Ivica Barić', '2024-12-26', '2024-12-26', 1030, 'Obavljen'),
-(2, 'KA2222QQ', 'Viktor Grgić', '2024-12-29', '2024-12-29', 4040, 'Obavljen'),
-(5, 'ZG6666UU', 'Franjo Jurić', '2025-01-12', '2025-01-12', 330, 'Obavljen'),
-(3, 'KA7777VV', 'Ante Vuk', '2025-01-13', NULL, 2660, 'U tijeku'),
-(1, 'ZG8888WW', 'Zvonimir Kovačić', '2025-01-18', NULL, 1710, 'U tijeku'),
-(2, 'ZG9999XX', 'Filip Marković', '2025-01-22', NULL, 2240, 'U tijeku');
-
-
 INSERT INTO racun (id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
 SELECT 16 AS id_zaposlenik, zzn.id AS id_zahtjev_za_narudzbu, DATE_ADD(zzn.datum_zahtjeva, INTERVAL 3 DAY) AS datum_racuna
 	FROM zahtjev_za_narudzbu zzn
 	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
-
+SELECT * FROM zahtjev_za_narudzbu;
 
 CREATE TABLE kvartalni_pregled_prodaje (
 	id_proizvod INTEGER,
@@ -1323,6 +1322,15 @@ CREATE TABLE kvartalni_pregled_prodaje (
     CONSTRAINT kvartalni_pregled_prodaje_pk PRIMARY KEY (id_proizvod, pocetni_datum, zavrsni_datum),
     CONSTRAINT kvartalni_pregled_prodaje__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
 );
+
+
+
+/* SELECT t.id, SUM(sn.kolicina)
+	FROM stavka_narudzbe sn
+    JOIN zahtjev_za_narudzbu zzn ON zzn.id = sn.id_zahtjev_za_narudzbu
+    JOIN transport t ON t.id = zzn.id_transport
+    GROUP BY t.id;*/
+    
 
 
 DELIMITER //
@@ -1405,11 +1413,11 @@ SET @datumrani = (SELECT MIN(datum_racuna) FROM racun);
 SET @datumkasni = (SELECT MAX(datum_racuna) FROM racun);
 -- CALL azuriraj_prodaju(@datumrani, @datumkasni);
 
-SELECT * FROM kvartalni_pregled_prodaje;
 
 
 
 ----------------------------------------------- VID
+
 -- upit, koji zaposlenik je primio najviše narudžbi
 
 SELECT z.id, z.ime, z.prezime, COUNT(zzn.id) AS broj_narudzbi
