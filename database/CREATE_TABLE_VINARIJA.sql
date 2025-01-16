@@ -52,7 +52,7 @@ CREATE TABLE berba (
     id_vino INTEGER NOT NULL,
     godina_berbe INTEGER NOT NULL,
     postotak_alkohola DECIMAL(5, 2) NOT NULL,
-    CONSTRAINT berba_vino_fk FOREIGN KEY (id_vino) REFERENCES vino(id)
+    FOREIGN KEY (id_vino) REFERENCES vino(id)
 );
 
 
@@ -76,7 +76,7 @@ CREATE TABLE punjenje (
     pocetak_punjenja DATE NOT NULL,
     zavrsetak_punjenja DATE NOT NULL,
     kolicina INTEGER NOT NULL, 
-    CONSTRAINT punjenje_proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
+    FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
     CONSTRAINT punjenje_kolicina_ck CHECK (kolicina > 0)
 );
 
@@ -103,7 +103,7 @@ CREATE TABLE repromaterijal (
     vrsta VARCHAR(100),
     opis TEXT,
     jedinicna_cijena DECIMAL(10, 2) NOT NULL,
-    CONSTRAINT repromaterijal__dobavljac_fk FOREIGN KEY (id_dobavljac) REFERENCES dobavljac(id),
+    FOREIGN KEY (id_dobavljac) REFERENCES dobavljac(id),
     CONSTRAINT repromaterijal_cijena_ck CHECK (jedinicna_cijena > 0)
 );
 
@@ -127,7 +127,7 @@ CREATE TABLE transport (
 	ime_vozaca VARCHAR(50) NOT NULL,
 	datum_polaska DATE NOT NULL,
 	datum_dolaska DATE,
-	kolicina INTEGER NOT NULL,
+	kolicina INTEGER,
 	status_transporta ENUM('Obavljen', 'U tijeku', 'Otkazan') NOT NULL,
 	FOREIGN KEY (id_prijevoznik) REFERENCES prijevoznik(id)
 );
@@ -139,8 +139,8 @@ CREATE TABLE repromaterijal_proizvod (
     id INTEGER AUTO_INCREMENT PRIMARY KEY,
     id_proizvod INTEGER NOT NULL,
     id_repromaterijal INTEGER NOT NULL,
-    CONSTRAINT repromaterijal_proizvod__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
-    CONSTRAINT repromaterijal_proizvod__repromaterijal_fk FOREIGN KEY (id_repromaterijal) REFERENCES repromaterijal(id),
+    FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
+    FOREIGN KEY (id_repromaterijal) REFERENCES repromaterijal(id),
     CONSTRAINT repromaterijal_proizvod_uk UNIQUE (id_proizvod, id_repromaterijal)
 );
 
@@ -153,8 +153,8 @@ CREATE TABLE zahtjev_za_narudzbu (
     datum_zahtjeva DATE NOT NULL,
     ukupni_iznos DECIMAL(8, 2),
     status_narudzbe ENUM('Primljena', 'U obradi', 'Na čekanju', 'Spremna za isporuku', 'Poslana', 'Završena', 'Otkazana') NOT NULL DEFAULT 'Na čekanju',
-    CONSTRAINT zahtjev_za_narudzbu__kupac_fk FOREIGN KEY (id_kupac) REFERENCES kupac(id),
-    CONSTRAINT zahtjev_za_narudzbu__zaposlenik_fk FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id),
+    FOREIGN KEY (id_kupac) REFERENCES kupac(id),
+    FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id),
     FOREIGN KEY (id_transport) REFERENCES transport(id)
 );
 
@@ -165,8 +165,8 @@ CREATE TABLE stavka_narudzbe (
     id_proizvod INTEGER NOT NULL,
     kolicina INTEGER NOT NULL,
     iznos_stavke DECIMAL(8, 2) NOT NULL,
-    CONSTRAINT stavka_narudzbe__zahtjev_za_narudzbu_fk FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id),
-    CONSTRAINT stavka_narudzbe__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
+    FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id) ON DELETE CASCADE,
+	FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
     CONSTRAINT stavka_narudzbe_uk UNIQUE (id_zahtjev_za_narudzbu, id_proizvod),
     CONSTRAINT stavka_narudzbe_kolicina_ck CHECK (kolicina > 0)
 );
@@ -355,8 +355,8 @@ DELIMITER ;
 
 CREATE TABLE stanje_skladista_vina (
 	id_berba INTEGER PRIMARY KEY,
-    kolicina DECIMAL(8,2),
-    CONSTRAINT stanje_skladista_vina__berba_fk FOREIGN KEY (id_berba) REFERENCES berba(id)
+    kolicina DECIMAL(8,2) NOT NULL,
+    FOREIGN KEY (id_berba) REFERENCES berba(id)
 );
 
 
@@ -432,8 +432,8 @@ DELIMITER ;
 
 CREATE TABLE stanje_skladista_proizvoda (
 	id_proizvod INTEGER PRIMARY KEY,
-    kolicina INTEGER,
-    CONSTRAINT stanje_skladista_proizvoda__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
+    kolicina INTEGER NOT NULL,
+    FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
 );
 
 
@@ -508,8 +508,8 @@ DELIMITER ;
 
 CREATE TABLE stanje_skladista_repromaterijala (
 	id_repromaterijal INTEGER PRIMARY KEY,
-    kolicina INTEGER,
-    CONSTRAINT stanje_skladista_repromaterijala__repromaterijal FOREIGN KEY (id_repromaterijal) REFERENCES repromaterijal(id)
+    kolicina INTEGER NOT NULL,
+    FOREIGN KEY (id_repromaterijal) REFERENCES repromaterijal(id)
 );
 
 
@@ -823,7 +823,6 @@ VALUES
 (33, 'AU0003', '2024-10-30', '2024-10-31', 1400);
 
 
-
 INSERT INTO dobavljac (naziv, adresa, email, telefon, oib) 
 VALUES 
 ('Vinski Repromaterijal d.o.o.', 'Adresa 2, Rijeka', 'vinski.repromaterijal@email.com', '051234567', '98765432112'),
@@ -833,8 +832,9 @@ VALUES
 
 
 INSERT INTO repromaterijal (id_dobavljac, vrsta, opis, jedinicna_cijena) VALUES
-(1, 'Kutija', 'Karton, dimenzije za 6 standardnih boca', 0.60),
-(1, 'Kutija', 'Karton, dimenzije za 12 standardnih boca', 0.90),
+(1, 'Kutija', 'Kartonska kutija, za 6 boca volumena 0.5 L', 0.50),
+(1, 'Kutija', 'Kartonska kutija, za 6 boca volumena 0.75 L', 0.60),
+(1, 'Kutija', 'Kartonska kutija, za 6 boca volumena 1.00 L', 0.70),
 
 (2, 'Čep', 'Pluteni čep za vina', 0.35),
 (2, 'Čep', 'Sintetički čep za vina', 0.22),
@@ -915,117 +915,150 @@ VALUES
 INSERT INTO repromaterijal_proizvod (id_proizvod, id_repromaterijal)
 VALUES
 -- Zagorska Graševina (Berbe 1 i 2)
-(1, 5), -- Boca 0.5 L za bijelo vino
-(1, 3), -- Pluteni čep
-(1, 14), -- Naljepnica za Zagorsku Graševinu 0.5 L
-(2, 6), -- Boca 0.75 L za bijelo vino
-(2, 3), -- Pluteni čep
-(2, 15), -- Naljepnica za Zagorsku Graševinu 0.75 L
-(3, 7), -- Boca 1.00 L za bijelo vino
-(3, 3), -- Pluteni čep
-(3, 16), -- Naljepnica za Zagorsku Graševinu 1.00 L
-(4, 5), -- Boca 0.5 L za bijelo vino
-(4, 3), -- Pluteni čep
-(4, 14), -- Naljepnica za Zagorsku Graševinu 0.5 L
-(5, 6), -- Boca 0.75 L za bijelo vino
-(5, 3), -- Pluteni čep
-(5, 15), -- Naljepnica za Zagorsku Graševinu 0.75 L
-(6, 7), -- Boca 1.00 L za bijelo vino
-(6, 3), -- Pluteni čep
-(6, 16), -- Naljepnica za Zagorsku Graševinu 1.00 L
+(1, 6), -- Boca 0.5 L za bijelo vino
+(1, 4), -- Pluteni čep
+(1, 15), -- Naljepnica za Zagorsku Graševinu 0.5 L
+(1, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(2, 7), -- Boca 0.75 L za bijelo vino
+(2, 4), -- Pluteni čep
+(2, 16), -- Naljepnica za Zagorsku Graševinu 0.75 L
+(2, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(3, 8), -- Boca 1.00 L za bijelo vino
+(3, 4), -- Pluteni čep
+(3, 17), -- Naljepnica za Zagorsku Graševinu 1.00 L
+(3, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
+(4, 6), -- Boca 0.5 L za bijelo vino
+(4, 4), -- Pluteni čep
+(4, 15), -- Naljepnica za Zagorsku Graševinu 0.5 L
+(4, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(5, 7), -- Boca 0.75 L za bijelo vino
+(5, 4), -- Pluteni čep
+(5, 16), -- Naljepnica za Zagorsku Graševinu 0.75 L
+(5, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(6, 8), -- Boca 1.00 L za bijelo vino
+(6, 4), -- Pluteni čep
+(6, 17), -- Naljepnica za Zagorsku Graševinu 1.00 L
+(6, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
 
 -- Zeleni Breg (Berbe 3 i 4)
-(7, 5), -- Boca 0.5 L za bijelo vino
-(7, 3), -- Pluteni čep
-(7, 17), -- Naljepnica za Zeleni Breg 0.5 L
-(8, 6), -- Boca 0.75 L za bijelo vino
-(8, 3), -- Pluteni čep
-(8, 18), -- Naljepnica za Zeleni Breg 0.75 L
-(9, 7), -- Boca 1.00 L za bijelo vino
-(9, 3), -- Pluteni čep
-(9, 19), -- Naljepnica za Zeleni Breg 1.00 L
-(10, 5), -- Boca 0.5 L za bijelo vino
-(10, 3), -- Pluteni čep
-(10, 17), -- Naljepnica za Zeleni Breg 0.5 L
-(11, 6), -- Boca 0.75 L za bijelo vino
-(11, 3), -- Pluteni čep
-(11, 18), -- Naljepnica za Zeleni Breg 0.75 L
-(12, 7), -- Boca 1.00 L za bijelo vino
-(12, 3), -- Pluteni čep
-(12, 19), -- Naljepnica za Zeleni Breg 1.00 L
+(7, 6), -- Boca 0.5 L za bijelo vino
+(7, 4), -- Pluteni čep
+(7, 18), -- Naljepnica za Zeleni Breg 0.5 L
+(7, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(8, 7), -- Boca 0.75 L za bijelo vino
+(8, 4), -- Pluteni čep
+(8, 19), -- Naljepnica za Zeleni Breg 0.75 L
+(8, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(9, 8), -- Boca 1.00 L za bijelo vino
+(9, 4), -- Pluteni čep
+(9, 20), -- Naljepnica za Zeleni Breg 1.00 L
+(9, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
+(10, 6), -- Boca 0.5 L za bijelo vino
+(10, 4), -- Pluteni čep
+(10, 18), -- Naljepnica za Zeleni Breg 0.5 L
+(10, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(11, 7), -- Boca 0.75 L za bijelo vino
+(11, 4), -- Pluteni čep
+(11, 19), -- Naljepnica za Zeleni Breg 0.75 L
+(11, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(12, 8), -- Boca 1.00 L za bijelo vino
+(12, 4), -- Pluteni čep
+(12, 20), -- Naljepnica za Zeleni Breg 1.00 L
+(12, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
 
 -- Bijela Zvijezda (Berbe 5 i 6)
-(13, 5), -- Boca 0.5 L za bijelo vino
-(13, 3), -- Pluteni čep
-(13, 20), -- Naljepnica za Bijelu Zvijezdu 0.5 L
-(14, 6), -- Boca 0.75 L za bijelo vino
-(14, 3), -- Pluteni čep
-(14, 21), -- Naljepnica za Bijelu Zvijezdu 0.75 L
-(15, 7), -- Boca 1.00 L za bijelo vino
-(15, 3), -- Pluteni čep
-(15, 22), -- Naljepnica za Bijelu Zvijezdu 1.00 L
-(16, 5), -- Boca 0.5 L za bijelo vino
-(16, 3), -- Pluteni čep
-(16, 20), -- Naljepnica za Bijelu Zvijezdu 0.5 L
-(17, 6), -- Boca 0.75 L za bijelo vino
-(17, 3), -- Pluteni čep
-(17, 21), -- Naljepnica za Bijelu Zvijezdu 0.75 L
-(18, 7), -- Boca 1.00 L za bijelo vino
-(18, 3), -- Pluteni čep
-(18, 22), -- Naljepnica za Bijelu Zvijezdu 1.00 L
+(13, 6), -- Boca 0.5 L za bijelo vino
+(13, 4), -- Pluteni čep
+(13, 21), -- Naljepnica za Bijelu Zvijezdu 0.5 L
+(13, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(14, 7), -- Boca 0.75 L za bijelo vino
+(14, 4), -- Pluteni čep
+(14, 22), -- Naljepnica za Bijelu Zvijezdu 0.75 L
+(14, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(15, 8), -- Boca 1.00 L za bijelo vino
+(15, 4), -- Pluteni čep
+(15, 23), -- Naljepnica za Bijelu Zvijezdu 1.00 L
+(15, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
+(16, 6), -- Boca 0.5 L za bijelo vino
+(16, 4), -- Pluteni čep
+(16, 21), -- Naljepnica za Bijelu Zvijezdu 0.5 L
+(16, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(17, 7), -- Boca 0.75 L za bijelo vino
+(17, 4), -- Pluteni čep
+(17, 22), -- Naljepnica za Bijelu Zvijezdu 0.75 L
+(17, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(18, 8), -- Boca 1.00 L za bijelo vino
+(18, 4), -- Pluteni čep
+(18, 23), -- Naljepnica za Bijelu Zvijezdu 1.00 L
+(18, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
 
 -- Ružičasti Horizont (Berbe 7 i 8)
-(19, 11), -- Boca 0.5 L za rose vino
-(19, 4), -- Sintetički čep
-(19, 23), -- Naljepnica za Ružičasti Horizont 0.5 L
-(20, 12), -- Boca 0.75 L za rose vino
-(20, 4), -- Sintetički čep
-(20, 24), -- Naljepnica za Ružičasti Horizont 0.75 L
-(21, 13), -- Boca 1.00 L za rose vino
-(21, 4), -- Sintetički čep
-(21, 25), -- Naljepnica za Ružičasti Horizont 1.00 L
-(22, 11), -- Boca 0.5 L za rose vino
-(22, 4), -- Sintetički čep
-(22, 23), -- Naljepnica za Ružičasti Horizont 0.5 L
-(23, 12), -- Boca 0.75 L za rose vino
-(23, 4), -- Sintetički čep
-(23, 24), -- Naljepnica za Ružičasti Horizont 0.75 L
-(24, 13), -- Boca 1.00 L za rose vino
-(24, 4), -- Sintetički čep
-(24, 25), -- Naljepnica za Ružičasti Horizont 1.00 L
+(19, 12), -- Boca 0.5 L za rose vino
+(19, 5), -- Sintetički čep
+(19, 24), -- Naljepnica za Ružičasti Horizont 0.5 L
+(19, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(20, 13), -- Boca 0.75 L za rose vino
+(20, 5), -- Sintetički čep
+(20, 25), -- Naljepnica za Ružičasti Horizont 0.75 L
+(20, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(21, 14), -- Boca 1.00 L za rose vino
+(21, 5), -- Sintetički čep
+(21, 26), -- Naljepnica za Ružičasti Horizont 1.00 L
+(21, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
+(22, 12), -- Boca 0.5 L za rose vino
+(22, 5), -- Sintetički čep
+(22, 24), -- Naljepnica za Ružičasti Horizont 0.5 L
+(22, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(23, 13), -- Boca 0.75 L za rose vino
+(23, 5), -- Sintetički čep
+(23, 25), -- Naljepnica za Ružičasti Horizont 0.75 L
+(23, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(24, 14), -- Boca 1.00 L za rose vino
+(24, 5), -- Sintetički čep
+(24, 26), -- Naljepnica za Ružičasti Horizont 1.00 L
+(24, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
 
 -- Lagana Rosa (Berba 9)
-(25, 11), -- Boca 0.5 L za rose vino
-(25, 4), -- Sintetički čep
-(25, 26), -- Naljepnica za Laganu Rosu 0.5 L
-(26, 12), -- Boca 0.75 L za rose vino
-(26, 4), -- Sintetički čep
-(26, 27), -- Naljepnica za Laganu Rosu 0.75 L
-(27, 13), -- Boca 1.00 L za rose vino
-(27, 4), -- Sintetički čep
-(27, 28), -- Naljepnica za Laganu Rosu 1.00 L
+(25, 12), -- Boca 0.5 L za rose vino
+(25, 5), -- Sintetički čep
+(25, 27), -- Naljepnica za Laganu Rosu 0.5 L
+(25, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(26, 13), -- Boca 0.75 L za rose vino
+(26, 5), -- Sintetički čep
+(26, 28), -- Naljepnica za Laganu Rosu 0.75 L
+(26, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(27, 14), -- Boca 1.00 L za rose vino
+(27, 5), -- Sintetički čep
+(27, 29), -- Naljepnica za Laganu Rosu 1.00 L
+(27, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
 
 -- Crni Biser (Berba 10)
-(28, 8), -- Boca 0.5 L za crno vino
-(28, 3), -- Pluteni čep
-(28, 29), -- Naljepnica za Crni Biser 0.5 L
-(29, 9), -- Boca 0.75 L za crno vino
-(29, 3), -- Pluteni čep
-(29, 30), -- Naljepnica za Crni Biser 0.75 L
-(30, 10), -- Boca 1.00 L za crno vino
-(30, 3), -- Pluteni čep
-(30, 31), -- Naljepnica za Crni Biser 1.00 L
+(28, 9), -- Boca 0.5 L za crno vino
+(28, 4), -- Pluteni čep
+(28, 30), -- Naljepnica za Crni Biser 0.5 L
+(28, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(29, 10), -- Boca 0.75 L za crno vino
+(29, 4), -- Pluteni čep
+(29, 31), -- Naljepnica za Crni Biser 0.75 L
+(29, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(30, 11), -- Boca 1.00 L za crno vino
+(30, 4), -- Pluteni čep
+(30, 32), -- Naljepnica za Crni Biser 1.00 L
+(30, 3), -- Kartonska kutija, za 6 boca volumena 1.00 L
 
 -- Tamni Val (Berba 11)
-(31, 8), -- Boca 0.5 L za crno vino
-(31, 3), -- Pluteni čep
-(31, 32), -- Naljepnica za Tamni Val 0.5 L
-(32, 9), -- Boca 0.75 L za crno vino
-(32, 3), -- Pluteni čep
-(32, 33), -- Naljepnica za Tamni Val 0.75 L
-(33, 10), -- Boca 1.00 L za crno vino
-(33, 3), -- Pluteni čep
-(33, 34); -- Naljepnica za Tamni Val 1.00 L
+(31, 9), -- Boca 0.5 L za crno vino
+(31, 4), -- Pluteni čep
+(31, 33), -- Naljepnica za Tamni Val 0.5 L
+(31, 1), -- Kartonska kutija, za 6 boca volumena 0.5 L
+(32, 10), -- Boca 0.75 L za crno vino
+(32, 4), -- Pluteni čep
+(32, 34), -- Naljepnica za Tamni Val 0.75 L
+(32, 2), -- Kartonska kutija, za 6 boca volumena 0.75 L
+(33, 11), -- Boca 1.00 L za crno vino
+(33, 4), -- Pluteni čep
+(33, 35), -- Naljepnica za Tamni Val 1.00 L
+(33, 3); -- Kartonska kutija, za 6 boca volumena 1.00 L
 
 
 INSERT INTO zahtjev_za_narudzbu (id_kupac, id_zaposlenik, id_transport, datum_zahtjeva, status_narudzbe)
@@ -1056,7 +1089,7 @@ VALUES
 (29, 17, 17, '2025-01-06', 'Poslana'),
 (11, 9, NULL, '2025-01-07', 'Primljena'),
 (13, 5, NULL, '2025-01-08', 'U obradi'),
-(17, 20, NULL, '2025-01-09', 'Otkazana'),
+(17, 20, NULL, '2025-01-09', 'Na čekanju'),
 (24, 17, NULL, '2025-01-10', 'Spremna za isporuku'),
 (20, 9, 18, '2025-01-11', 'Poslana'),
 (23, 5, NULL, '2025-01-12', 'Primljena'),
@@ -1272,19 +1305,7 @@ VALUES
 
 -------------------------------------------------------- LAURA 
 
-INSERT INTO skladiste_repromaterijal (datum, id_repromaterijal, kolicina, tip_transakcije, lokacija)
-SELECT p.pocetak_punjenja AS datum, rp.id_repromaterijal, SUM(p.kolicina) AS kolicina, 'izlaz' AS tip_transakcije, 'Skladište D' AS lokacija
-	FROM Punjenje p
-	JOIN Repromaterijal_proizvod rp ON p.id_proizvod = rp.id_proizvod
-	GROUP BY p.pocetak_punjenja, rp.id_repromaterijal
-UNION ALL
-SELECT DATE_SUB(p.pocetak_punjenja, INTERVAL 2 WEEK) AS datum, rp.id_repromaterijal, SUM(p.kolicina) + ROUND(RAND(123) * 100 + 50) AS kolicina, 'ulaz' AS tip_transakcije, 'Skladište D' AS lokacija
-	FROM Punjenje p
-	JOIN Repromaterijal_proizvod rp ON p.id_proizvod = rp.id_proizvod
-	GROUP BY p.pocetak_punjenja, rp.id_repromaterijal
-	ORDER BY datum, id_repromaterijal;
 
-    
 INSERT INTO skladiste_proizvod (id_proizvod, datum, tip_transakcije, kolicina, lokacija)
 SELECT id_proizvod, zavrsetak_punjenja AS datum, 'ulaz' AS tip_transakcije, kolicina, 'Skladište E' AS lokacija
 	FROM punjenje
@@ -1294,6 +1315,32 @@ SELECT sn.id_proizvod, DATE_ADD(zzn.datum_zahtjeva, INTERVAL 7 DAY) AS datum, 'i
 	JOIN zahtjev_za_narudzbu zzn ON sn.id_zahtjev_za_narudzbu = zzn.id
 	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena')
 	ORDER BY datum;
+
+INSERT INTO skladiste_repromaterijal (id_repromaterijal, datum, tip_transakcije, kolicina, lokacija)
+SELECT rp.id_repromaterijal, DATE_SUB(p.pocetak_punjenja, INTERVAL 2 WEEK) AS datum, 'ulaz' AS tip_transakcije, SUM(p.kolicina) + ROUND(RAND(123) * 100 + 50) AS kolicina, 'Skladište D' AS lokacija
+	FROM punjenje p
+	JOIN repromaterijal_proizvod rp ON p.id_proizvod = rp.id_proizvod
+    WHERE rp.id_repromaterijal NOT IN (1, 2, 3)
+	GROUP BY datum, rp.id_repromaterijal
+UNION ALL
+	SELECT rp.id_repromaterijal, p.pocetak_punjenja AS datum, 'izlaz' AS tip_transakcije, SUM(p.kolicina) AS kolicina, 'Skladište D' AS lokacija
+	FROM punjenje p
+	JOIN repromaterijal_proizvod rp ON p.id_proizvod = rp.id_proizvod
+    WHERE rp.id_repromaterijal NOT IN (1, 2, 3)
+	GROUP BY datum, rp.id_repromaterijal
+UNION ALL
+SELECT rp.id_repromaterijal, DATE_ADD(p.zavrsetak_punjenja, INTERVAL 10 DAY) AS datum, 'ulaz' AS tip_transakcije, SUM(CEIL(p.kolicina/6)) + ROUND(RAND(100) * 50 + 5) AS kolicina, 'Skladište D' AS lokacija
+	FROM punjenje p
+	JOIN repromaterijal_proizvod rp ON p.id_proizvod = rp.id_proizvod
+    WHERE rp.id_repromaterijal IN (1, 2, 3)
+	GROUP BY datum, rp.id_repromaterijal
+UNION ALL
+	SELECT rp.id_repromaterijal, sp.datum, 'izlaz' AS tip_transakcije, SUM(CEIL(sp.kolicina/6)) AS kolicina, 'Skladište D' AS lokacija
+	FROM skladiste_proizvod sp
+	JOIN repromaterijal_proizvod rp ON sp.id_proizvod = rp.id_proizvod
+    WHERE rp.id_repromaterijal IN (1, 2, 3) AND sp.tip_transakcije = 'izlaz'
+	GROUP BY datum, rp.id_repromaterijal
+    ORDER BY datum, id_repromaterijal;
 
 
 INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik)
@@ -1313,24 +1360,16 @@ SELECT 16 AS id_zaposlenik, zzn.id AS id_zahtjev_za_narudzbu, DATE_ADD(zzn.datum
 	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
 SELECT * FROM zahtjev_za_narudzbu;
 
+
 CREATE TABLE kvartalni_pregled_prodaje (
 	id_proizvod INTEGER,
-    kolicina INTEGER,
-    ukupni_iznos DECIMAL(10,2),
+    kolicina INTEGER NOT NULL,
+    ukupni_iznos DECIMAL(10,2) NOT NULL,
     pocetni_datum DATE,
     zavrsni_datum DATE,
-    CONSTRAINT kvartalni_pregled_prodaje_pk PRIMARY KEY (id_proizvod, pocetni_datum, zavrsni_datum),
-    CONSTRAINT kvartalni_pregled_prodaje__proizvod_fk FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
+    PRIMARY KEY (id_proizvod, pocetni_datum, zavrsni_datum),
+    FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
 );
-
-
-
-/* SELECT t.id, SUM(sn.kolicina)
-	FROM stavka_narudzbe sn
-    JOIN zahtjev_za_narudzbu zzn ON zzn.id = sn.id_zahtjev_za_narudzbu
-    JOIN transport t ON t.id = zzn.id_transport
-    GROUP BY t.id;*/
-    
 
 
 DELIMITER //
@@ -1381,6 +1420,7 @@ BEGIN
 END //
 DELIMITER ;
 
+
 DELIMITER //
 CREATE TRIGGER bi_kvartalni_pregled_prodaje
 	BEFORE INSERT ON kvartalni_pregled_prodaje
@@ -1412,6 +1452,96 @@ SHOW EVENTS;
 SET @datumrani = (SELECT MIN(datum_racuna) FROM racun);
 SET @datumkasni = (SELECT MAX(datum_racuna) FROM racun);
 -- CALL azuriraj_prodaju(@datumrani, @datumkasni);
+
+
+DELIMITER //
+CREATE PROCEDURE izracunaj_kolicinu_transporta(IN p_id_transport INTEGER)
+BEGIN
+	DECLARE kolicina_transporta INTEGER;
+    
+    SELECT SUM(sn.kolicina) INTO kolicina_transporta
+		FROM stavka_narudzbe sn
+		JOIN zahtjev_za_narudzbu zzn ON zzn.id = sn.id_zahtjev_za_narudzbu
+		JOIN transport t ON t.id = zzn.id_transport
+		WHERE zzn.id_transport = p_id_transport;
+        
+	IF kolicina_transporta IS NULL THEN
+		SIGNAL SQLSTATE '45010' SET MESSAGE_TEXT = 'Transport mora biti dodijeljen barem jednoj narudžbi!';
+	ELSE
+		UPDATE transport
+			SET kolicina = kolicina_transporta
+            WHERE id = p_id_transport;
+	END IF;
+END //
+DELIMITER ;
+
+
+START TRANSACTION;
+
+INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca, datum_polaska, status_transporta) 
+VALUES (2, 'ZG4748GG', 'Juraj Jurić', CURDATE(), 'U tijeku'); 
+
+SET @novi_transport = LAST_INSERT_ID();
+
+UPDATE zahtjev_za_narudzbu
+	SET id_transport = @novi_transport, status_narudzbe = 'Poslana'
+    WHERE status_narudzbe = 'Spremna za isporuku';
+    
+CALL izracunaj_kolicinu_transporta(@novi_transport);
+
+COMMIT;
+
+
+DELIMITER //
+CREATE TRIGGER au_zahtjev_za_narudzbu_otkazana
+	AFTER UPDATE ON zahtjev_za_narudzbu
+    FOR EACH ROW
+BEGIN 
+	IF new.status_narudzbe = 'Otkazana' THEN
+		DELETE FROM stavka_narudzbe
+        WHERE id_zahtjev_za_narudzbu = new.id;
+    END IF;
+END //
+DELIMITER ;
+
+SELECT * FROM stavka_narudzbe;
+UPDATE zahtjev_za_narudzbu 
+	SET status_narudzbe = 'Otkazana'
+    WHERE id = 27;
+
+
+DELIMITER //
+CREATE TRIGGER bu_transport_datum_dolaska
+	BEFORE UPDATE ON transport
+    FOR EACH ROW
+BEGIN
+	IF new.datum_dolaska IS NOT NULL THEN
+		SET new.status_transporta = 'Obavljen';
+	END IF;
+END //
+DELIMITER ;
+
+
+DELIMITER //
+CREATE TRIGGER au_transport_datum_dolaska
+	AFTER UPDATE ON transport
+    FOR EACH ROW
+BEGIN
+	IF new.datum_dolaska IS NOT NULL THEN
+		UPDATE zahtjev_za_narudzbu
+			SET status_narudzbe = 'Završena'
+            WHERE id_transport = new.id;
+	END IF;
+END //
+DELIMITER ;
+
+
+SELECT * FROM transport;
+SELECT * FROM zahtjev_za_narudzbu;
+
+UPDATE transport 
+	SET datum_dolaska = CURDATE()
+    WHERE id = 17;
 
 
 
@@ -1711,7 +1841,9 @@ CREATE VIEW proizvodni_troskovi AS
 		v.naziv,
 		b.godina_berbe,
 		p.cijena AS cijena_proizvoda, 
-		SUM(r.jedinicna_cijena) AS ukupni_trosak_repromaterijala
+		ROUND(SUM(CASE WHEN r.vrsta = 'Kutija' THEN r.jedinicna_cijena / 6
+			ELSE r.jedinicna_cijena
+		END), 2) AS ukupni_trosak_repromaterijala
 	FROM 
 		proizvod p
 	JOIN 
