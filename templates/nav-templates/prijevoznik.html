@@ -12,13 +12,13 @@
 
 <body>
 
-    <section class="kupac">
-        <div class="kupac_container">
-            <div class="kupac_navbar">
-                <button class="kupac_nav-button" id="addEmployeeBtn">Dodaj kupca</button>
-                <button class="kupac_nav-button" id="editDeleteBtn">Uredi/Obriši</button>
+    <section class="prijevoznik">
+        <div class="prijevoznik_container">
+            <div class="prijevoznik_navbar">
+                <button class="prijevoznik_nav-button" id="addEmployeeBtn">Dodaj prijevoznika</button>
+                <button class="prijevoznik_nav-button" id="editDeleteBtn">Uredi/Obriši</button>
                 <div class="dropdown-container">
-                    <button class="kupac_nav-button dropdown-toggle" id="sortBtn">Sortiraj</button>
+                    <button class="prijevoznik_nav-button dropdown-toggle" id="sortBtn">Sortiraj</button>
                     <div class="dropdown">
                         <ul>
                             <li><a href="#" class="dropdown-item">Po imenu</a></li>
@@ -29,21 +29,19 @@
                 </div>
             </div>
 
-            <table class="kupac_table">
+            <table class="prijevoznik_table">
                 <thead>
                     <tr>
                         <th>ID</th>
                         <th>Naziv</th>
-                        <th>OIB</th>
-                        <th>Ime</th>
-                        <th>Prezime</th>
                         <th>Adresa</th>
                         <th>Email</th>
                         <th>Telefon</th>
+                        <th>OIB</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in kupac %}
+                    {% for row in prijevoznik %}
                     <tr>
                         <td>{{ row[0] }}</td>
                         <td>{{ row[1] }}</td>
@@ -51,12 +49,10 @@
                         <td>{{ row[3] }}</td>
                         <td>{{ row[4] }}</td>
                         <td>{{ row[5] }}</td>
-                        <td>{{ row[6] }}</td>
-                        <td>{{ row[7] }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="8">Nema podataka.</td>
+                        <td colspan="6">Nema podataka.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

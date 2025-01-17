@@ -14,7 +14,6 @@
 
     {% include 'header.html' %}
 
-
     <div class="main-container">
         <div class="inner-container">
             <nav class="inner-nav">
@@ -23,18 +22,19 @@
                                 class="fas fa-user"></i> Zaposlenik</a></li>
                     <li><a href="{{ url_for('kupac') }}" target="outer-content-frame" class="nav-button"><i
                                 class="fas fa-users"></i> Kupac</a></li>
-                    <li><a href="#" class="nav-button"><i class="fas fa-truck"></i> Prijevoznik</a></li>
-                    <li><a href="#" class="nav-button"><i class="fas fa-box"></i> Proizvodi</a></li>
-                    <li>
-                        <a href="#" class="nav-button" id="zahtjeviBtn">
-                            <i class="fas fa-tasks"></i> Zahtjevi <i class="fas fa-chevron-down dropdown-icon"></i>
-                        </a>
-                        <ul class="dropdown">
-                            <li><a href="#" class="nav-button"><i class="fas fa-file-alt"></i> Zahtjev za narudžbu</a>
-                            </li>
-                            <li><a href="#" class="nav-button"><i class="fas fa-file-import"></i> Zahtjev za nabavu</a>
-                            </li>
-                        </ul>
+                    <li><a href="{{ url_for('prijevoznik') }}" target="outer-content-frame" class="nav-button"><i
+                                class="fas fa-users"></i> Prijevoznik</a></li>
+                    <li><a href="{{ url_for('proizvod') }}" target="outer-content-frame" class="nav-button"><i
+                                class="fas fa-users"></i> Proizvodi</a></li>
+                    <a href="#" class="nav-button" id="zahtjeviBtn">
+                        <i class="fas fa-tasks"></i> Zahtjevi <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <ul class="dropdown">
+                        <li><a href="#" class="nav-button"><i class="fas fa-file-alt"></i> Zahtjev za narudžbu</a>
+                        </li>
+                        <li><a href="#" class="nav-button"><i class="fas fa-file-import"></i> Zahtjev za nabavu</a>
+                        </li>
+                    </ul>
                     </li>
                     <li><a href="#" class="nav-button"><i class="fas fa-calendar-alt"></i> Plan proizvodnje</a></li>
                     <li><a href="#" class="nav-button"><i class="fas fa-warehouse"></i> Skladište</a></li>

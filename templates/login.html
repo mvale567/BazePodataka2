@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <title>Login</title>
+</head>
+
+<body>
+    {% if message %}
+    <div class="alert alert-danger" role="alert">
+        {{ message }}
+    </div>
+    {% endif %}
+
+    <div class="login-container">
+        <h2>Login</h2>
+        <form method="POST" action="{{ url_for('login') }}">
+            <label for="db_username">Database Username</label>
+            <input type="text" name="db_username" required>
+            <br>
+            <label for="db_password">Database Password</label>
+            <input type="password" name="db_password" required>
+            <br>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+</body>
+
+</html>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const loginContainer = document.getElementById("login-container"); // Element koji sadrži login
+
+        // Dodajte listener na dugme za prijavu
+        const loginButton = document.getElementById("login-button"); // Dugme za prijavu
+        loginButton.addEventListener("click", function () {
+            // Sakrij login HTML (možete koristiti klasu ili direktno display style)
+            loginContainer.style.display = "none";
+
+            // Alternativno, dodajte klasu da sakrijete element animacijom
+            // loginContainer.classList.add("hidden");
+        });
+    });
+
+</script>
