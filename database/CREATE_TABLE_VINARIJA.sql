@@ -165,7 +165,7 @@ CREATE TABLE stavka_narudzbe (
     id_proizvod INTEGER NOT NULL,
     kolicina INTEGER NOT NULL,
     iznos_stavke DECIMAL(8, 2) NOT NULL,
-    FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_zahtjev_za_narudzbu) REFERENCES zahtjev_za_narudzbu(id),
 	FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
     CONSTRAINT stavka_narudzbe_uk UNIQUE (id_zahtjev_za_narudzbu, id_proizvod),
     CONSTRAINT stavka_narudzbe_kolicina_ck CHECK (kolicina > 0)
@@ -363,14 +363,9 @@ CREATE TABLE stanje_skladista_vina (
 DELIMITER //
 CREATE PROCEDURE azuriraj_kolicinu_vina (IN p_id_berba INTEGER, IN p_tip_transakcije ENUM('ulaz', 'izlaz'), IN p_kolicina DECIMAL(8,2))
 BEGIN
-	DECLARE berba_postoji INTEGER;
     DECLARE nova_kolicina DECIMAL(8,2);
     
-    SELECT COUNT(*) INTO berba_postoji
-		FROM stanje_skladista_vina
-		WHERE id_berba = p_id_berba;
-    
-    IF berba_postoji = 0 THEN
+    IF NOT EXISTS (SELECT 1 FROM stanje_skladista_vina WHERE id_berba = p_id_berba) THEN
 		IF p_tip_transakcije = 'ulaz' THEN
 			INSERT INTO stanje_skladista_vina VALUES (p_id_berba, p_kolicina);
         ELSE
@@ -440,13 +435,9 @@ CREATE TABLE stanje_skladista_proizvoda (
 DELIMITER //
 CREATE PROCEDURE azuriraj_kolicinu_proizvoda (IN p_id_proizvod INTEGER, IN p_tip_transakcije ENUM('ulaz', 'izlaz'), IN p_kolicina INTEGER)
 BEGIN
-	DECLARE proizvod_postoji, nova_kolicina INTEGER;
+	DECLARE nova_kolicina INTEGER;
     
-    SELECT COUNT(*) INTO proizvod_postoji
-		FROM stanje_skladista_proizvoda
-		WHERE id_proizvod = p_id_proizvod;
-        
-	IF proizvod_postoji = 0 THEN
+	IF NOT EXISTS (SELECT 1 FROM stanje_skladista_proizvoda WHERE id_proizvod = p_id_proizvod) THEN
 		IF p_tip_transakcije = 'ulaz' THEN
 			INSERT INTO stanje_skladista_proizvoda VALUES (p_id_proizvod, p_kolicina);
 		ELSE
@@ -516,13 +507,9 @@ CREATE TABLE stanje_skladista_repromaterijala (
 DELIMITER //
 CREATE PROCEDURE azuriraj_kolicinu_repromaterijala (IN p_id_repromaterijal INTEGER, IN p_tip_transakcije ENUM('ulaz', 'izlaz'), p_kolicina INTEGER)
 BEGIN
-	DECLARE repromaterijal_postoji, nova_kolicina INTEGER;
+	DECLARE nova_kolicina INTEGER;
     
-    SELECT COUNT(*) INTO repromaterijal_postoji
-		FROM stanje_skladista_repromaterijala
-        WHERE id_repromaterijal = p_id_repromaterijal;
-	
-    IF repromaterijal_postoji = 0 THEN
+    IF NOT EXISTS (SELECT 1 FROM stanje_skladista_repromaterijala WHERE id_repromaterijal = p_id_repromaterijal) THEN
 		IF p_tip_transakcije = 'ulaz' THEN
 			INSERT INTO stanje_skladista_repromaterijala VALUES (p_id_repromaterijal, p_kolicina);
 		ELSE
@@ -550,6 +537,7 @@ BEGIN
     
 END //
 DELIMITER ;
+
 
 
 DELIMITER //
@@ -1353,7 +1341,7 @@ END AS id_zaposlenik
 	FROM skladiste_repromaterijal
 	WHERE tip_transakcije = 'ulaz';
 
-
+SELECT * FROM racun;
 INSERT INTO racun (id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
 SELECT 16 AS id_zaposlenik, zzn.id AS id_zahtjev_za_narudzbu, DATE_ADD(zzn.datum_zahtjeva, INTERVAL 3 DAY) AS datum_racuna
 	FROM zahtjev_za_narudzbu zzn
@@ -1542,7 +1530,6 @@ SELECT * FROM zahtjev_za_narudzbu;
 UPDATE transport 
 	SET datum_dolaska = CURDATE()
     WHERE id = 17;
-
 
 
 
