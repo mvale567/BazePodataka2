@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="hr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Naslovna</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+
+<body>
+
+    <section class="tablica">
+        <div class="tablica_container">
+            <div class="tablica_navbar">
+                <div class="dropdown-container">
+                    <button class="tablica_nav-button dropdown-toggle" id="sortBtn">Sortiraj</button>
+                    <div class="dropdown">
+                        <ul>
+                            <li><a href="#" class="dropdown-item">Po imenu</a></li>
+                            <li><a href="#" class="dropdown-item">Po prezimenu</a></li>
+                            <li><a href="#" class="dropdown-item">Po odjelu</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <table class="tablica_table">
+                <thead>
+                    <tr>
+                        <th>ID_berba</th>
+                        <th>Količina</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in stanje_skladista_vina %}
+                    <tr>
+                        <td>{{ row[0] }}</td>
+                        <td>{{ row[1] }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2">Nema podataka.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</body>
+
+</html>

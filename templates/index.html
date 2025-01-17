@@ -24,23 +24,32 @@
                                 class="fas fa-users"></i> Kupac</a></li>
                     <li><a href="{{ url_for('prijevoznik') }}" target="outer-content-frame" class="nav-button"><i
                                 class="fas fa-users"></i> Prijevoznik</a></li>
+                    <li><a href="{{ url_for('berba') }}" target="outer-content-frame" class="nav-button"><i
+                                class="fas fa-wine-glass"></i> Berbe </a></li>
                     <li><a href="{{ url_for('proizvod') }}" target="outer-content-frame" class="nav-button"><i
-                                class="fas fa-users"></i> Proizvodi</a></li>
-                    <a href="#" class="nav-button" id="zahtjeviBtn">
-                        <i class="fas fa-tasks"></i> Zahtjevi <i class="fas fa-chevron-down dropdown-icon"></i>
-                    </a>
-                    <ul class="dropdown">
-                        <li><a href="#" class="nav-button"><i class="fas fa-file-alt"></i> Zahtjev za narudžbu</a>
-                        </li>
-                        <li><a href="#" class="nav-button"><i class="fas fa-file-import"></i> Zahtjev za nabavu</a>
-                        </li>
-                    </ul>
+                                class="fas fa-wine-glass"></i> Proizvodi</a></li>
+                    <li><a href="{{ url_for('repromaterijal_proizvod') }}" target="outer-content-frame" class="nav-button"><i
+                                class="fas fa-box"></i> Repromaterijal po proizvodu</a></li>
+                    <li><a href="{{ url_for('punjenje') }}" target="outer-content-frame" class="nav-button"><i
+                                class="fas fa-cogs"></i> Punjenje proizvoda </a></li>
+                    <li><a href="#" class="nav-button" id="zahtjeviBtn"><i class="fas fa-tasks"></i> Zahtjevi <i class="fas fa-chevron-down dropdown-icon"></i></a>
+                        <ul class="dropdown">
+                            <li><a href="{{ url_for('zahtjev_za_narudzbu') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-file-alt"></i> Zahtjev za narudžbu</a></li>
+                            <li><a href="{{ url_for('stavka_narudzbe') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-file-alt"></i> Stavke narudžbi </a></li>
+                            <li><a href="#" class="nav-button"><i class="fas fa-file-import"></i> Zahtjev za nabavu</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#" class="nav-button" id="skladistaBtn"><i class="fas fa-warehouse"></i> Skladišta <i class="fas fa-chevron-down dropdown-icon"></i></a>
+                        <ul class="dropdown">
+                            <li><a href="{{ url_for('stanje_skladista_vina') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-warehouse"></i> Stanje skladišta vina</a></li>
+                            <li><a href="{{ url_for('stanje_skladista_proizvoda') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-warehouse"></i> Stanje skladišta proizvoda</a></li>
+                            <li><a href="{{ url_for('stanje_skladista_repromaterijala') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-warehouse"></i> Stanje skladišta repromaterijala</a></li>
+                        </ul>
                     </li>
                     <li><a href="#" class="nav-button"><i class="fas fa-calendar-alt"></i> Plan proizvodnje</a></li>
-                    <li><a href="#" class="nav-button"><i class="fas fa-warehouse"></i> Skladište</a></li>
                     <li><a href="#" class="nav-button"><i class="fas fa-shipping-fast"></i> Transport</a></li>
                     <li><a href="#" class="nav-button"><i class="fas fa-file-invoice-dollar"></i> Računi</a></li>
-
+                    <li><a href="{{ url_for('kvartalni_pregled_prodaje') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-file-invoice-dollar"></i> Prodaja po kvartalu </a></li>
                 </ul>
             </nav>
         </div>

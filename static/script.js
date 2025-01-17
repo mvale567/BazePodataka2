@@ -1,21 +1,29 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const zahtjeviBtn = document.getElementById('zahtjeviBtn');
-    const dropdown = zahtjeviBtn.nextElementSibling;
+    // Funkcija za upravljanje dropdown-om
+    function aktiviraj_dropdown(buttonId) {
+        const btn = document.getElementById(buttonId);
+        const dropdown = btn.nextElementSibling;
 
-    zahtjeviBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        zahtjeviBtn.classList.toggle('active'); // Dodaj ili ukloni klasu za rotaciju strelice
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    });
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            btn.classList.toggle('active'); // Dodaj ili ukloni klasu za rotaciju strelice
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        });
 
-    // Klik na bilo gdje van dropdown-a da ga zatvori
-    document.addEventListener('click', function (e) {
-        if (!zahtjeviBtn.contains(e.target)) {
-            zahtjeviBtn.classList.remove('active');
-            dropdown.style.display = 'none';
-        }
-    });
+        // Klik na bilo gdje van dropdown-a da ga zatvori
+        document.addEventListener('click', function (e) {
+            if (!btn.contains(e.target)) {
+                btn.classList.remove('active');
+                dropdown.style.display = 'none';
+            }
+        });
+    }
+
+    // Pozivanje funkcije za oba dropdowna
+    aktiviraj_dropdown('zahtjeviBtn');  // Za zahtjeve
+    aktiviraj_dropdown('skladistaBtn');  // Za skladišta
 });
+
 
 
 // zaposlenik sortiranje, dropdown

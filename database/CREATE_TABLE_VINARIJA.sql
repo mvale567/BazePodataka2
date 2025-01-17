@@ -185,7 +185,6 @@ CREATE TABLE racun (
 );
 
 
-
 ----------------------------------------------- MARKO
 
 CREATE TABLE plan_proizvodnje (
@@ -1473,8 +1472,8 @@ SET @novi_transport = LAST_INSERT_ID();
 
 UPDATE zahtjev_za_narudzbu
 	SET id_transport = @novi_transport, status_narudzbe = 'Poslana'
-    WHERE status_narudzbe = 'Spremna za isporuku';
-    
+    WHERE id IN (28, 33);
+  
 CALL izracunaj_kolicinu_transporta(@novi_transport);
 
 COMMIT;
@@ -1728,7 +1727,7 @@ INSERT INTO zahtjev_za_narudzbu (id, id_kupac, id_zaposlenik, datum_zahtjeva, uk
 VALUES (36, 1, 1, '2025-01-01', 100.00, 'Primljena');
 
 INSERT INTO racun (id, id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
-VALUES (33, 1, 1, '2025-01-02');
+VALUES (33, 1, 31, '2025-01-02');
 
 SELECT * FROM zahtjev_za_narudzbu WHERE id = 36;
 SELECT * FROM racun WHERE id_zahtjev_za_narudzbu = 1;
@@ -2107,7 +2106,7 @@ GROUP BY p.naziv;
 -- transakcije
 
 SELECT * FROM transport;
-
+/*
 -- 1. Transakcija: Dodavanje novog transporta i ažuriranje broja transporta prijevoznika
 START TRANSACTION;
 INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca, datum_polaska, datum_dolaska, kolicina, status_transporta)
@@ -2150,8 +2149,9 @@ BEGIN
     WHERE id = OLD.id_prijevoznik;
 END//
 DELIMITER ;
-
+*/
 -- procedure
+SET GLOBAL SQL_SAFE_UPDATES = 0;
 
 -- 1. Procedura: Dodavanje novog transporta
 DELIMITER //
@@ -2227,11 +2227,13 @@ VALUES ('admin'),
     ('moderator'), 
     ('zaposlenik');
 
+SELECT * FROM zaposlenik;
 
+SELECT * FROM uloge;
 
 -- -proširivanje tablice zaposlenik i dodavanje privilegija za prijavu
-ALTER TABLE zaposlenik
-DROP COLUMN uloga;
+/*ALTER TABLE zaposlenik
+DROP COLUMN uloga; */
 
 ALTER TABLE zaposlenik
 ADD COLUMN uloga_id INT NOT NULL DEFAULT 4,  -- automatski stavlja ulogu zaposlenika na korisnika na kojem nije definiran
@@ -2248,7 +2250,7 @@ WHERE id = 7;
 
 SELECT *
 FROM zaposlenik
-WHERE uloga = '1';
+WHERE uloga_id = '1';
 
 
 -- dodavanje tablice uloga_pristupa, definira kojim akcijama korisnik ima pristup
@@ -2526,3 +2528,5 @@ END;
 DELIMITER ;
 
 CALL prikazi_prava_korisnika(7);
+
+SELECT * FROM uloge;
