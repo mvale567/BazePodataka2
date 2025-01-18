@@ -2596,4 +2596,7 @@ CREATE USER 'SkladisteSef'@'localhost' IDENTIFIED BY 'skladiste123';
 GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_proizvod TO 'SkladisteSef'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_vino TO 'SkladisteSef'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_repromaterijal TO 'SkladisteSef'@'localhost';
-
+GRANT SELECT, INSERT, UPDATE ON vinarija.stanje_skladista_proizvoda TO 'SkladisteSef'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vinarija.stanje_skladista_repromaterijala TO 'SkladisteSef'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vinarija.stanje_skladista_vina TO 'SkladisteSef'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vinarija.mp_stanje_skladista_vina TO 'SkladisteSef'@'localhost';
