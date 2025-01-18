@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-
 // zaposlenik sortiranje, dropdown
 document.addEventListener('DOMContentLoaded', function () {
     const sortBtn = document.getElementById("sortBtn");
@@ -34,5 +33,15 @@ document.addEventListener('DOMContentLoaded', function () {
     sortBtn.addEventListener("click", () => {
         // Toggle klasu 'active' za dropdown
         dropdown.classList.toggle("active");
+    });
+})
+
+// linkanje preko gumbova sa data-url=''
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll(".tablica_nav-button").forEach(button => {
+        button.addEventListener("click", function () {
+            const url = this.getAttribute("data-url");
+            window.location.href = url;
+        });
     });
 });

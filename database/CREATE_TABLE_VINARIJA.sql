@@ -52,7 +52,8 @@ CREATE TABLE berba (
     id_vino INTEGER NOT NULL,
     godina_berbe INTEGER NOT NULL,
     postotak_alkohola DECIMAL(5, 2) NOT NULL,
-    FOREIGN KEY (id_vino) REFERENCES vino(id)
+    FOREIGN KEY (id_vino) REFERENCES vino(id),
+    CONSTRAINT berba_postotak_alkohola_ck CHECK (postotak_alkohola BETWEEN 5 AND 25)
 );
 
 
@@ -1530,9 +1531,71 @@ UPDATE transport
 	SET datum_dolaska = CURDATE()
     WHERE id = 17;
 
+-- pogled za aplikaciju
 
+CREATE VIEW repromaterijal_po_proizvodu AS
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, r.opis AS repromaterijal
+	FROM vino v
+    JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON p.id_berba = b.id
+	JOIN repromaterijal_proizvod rp ON rp.id_proizvod = p.id
+    JOIN repromaterijal r ON rp.id_repromaterijal = r.id;
+    
+SELECT * FROM repromaterijal_po_proizvodu;
 
------------------------------------------------ VID
+DELIMITER //
+CREATE PROCEDURE dodaj_novu_berbu (IN p_id_vino INTEGER, IN p_godina_berbe INTEGER, IN p_postotak_alkohola DECIMAL(5, 2))
+BEGIN
+	IF p_godina_berbe > YEAH(CURDATE()) THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Godina berbe ne može biti u budućnosti';
+    END IF;
+    INSERT INTO berba (id_vino, godina_berbe, postotak_alkohola)
+    VALUES (p_id_vino, p_godina_berbe, p_postotak_alkohola);
+END //
+DELIMITER ;
+
+CREATE VIEW vino_skladiste AS 
+SELECT CONCAT(v.naziv,' ', b.godina_berbe) AS vino, ssv.kolicina
+	FROM vino v
+    JOIN berba b ON v.id = b.id_vino
+    JOIN stanje_skladista_vina ssv ON ssv.id_berba = b.id;
+SELECT * FROM stanje_skladista_vina;
+
+CREATE VIEW proizvod_skladiste AS
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, ssp.kolicina
+	FROM vino v
+    JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON p.id_berba = b.id
+    JOIN stanje_skladista_proizvoda ssp ON p.id = ssp.id_proizvod;
+
+CREATE VIEW repromaterijal_skladiste AS
+SELECT r.opis AS repromaterijal, ssr.kolicina
+	FROM repromaterijal r
+    JOIN stanje_skladista_repromaterijala ssr ON r.id = ssr.id_repromaterijal;
+
+CREATE VIEW kvartalna_prodaja AS
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, kpp.kolicina, kpp.ukupni_iznos, kpp.pocetni_datum, kpp.zavrsni_datum
+	FROM vino v
+    JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON p.id_berba = b.id
+    JOIN kvartalni_pregled_prodaje kpp ON p.id = kpp.id_proizvod;
+
+CREATE VIEW punjenje_pogled AS
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, pu.oznaka_serije, pu.pocetak_punjenja, pu.zavrsetak_punjenja, pu.kolicina 
+	FROM vino v
+    JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON p.id_berba = b.id
+    JOIN punjenje pu ON p.id = pu.id_proizvod
+    ORDER BY pu.pocetak_punjenja ASC, pu.oznaka_serije ASC;
+    
+SELECT * FROM punjenje_pogled;
+SELECT pu.id, CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, pu.oznaka_serije, pu.pocetak_punjenja, pu.zavrsetak_punjenja, pu.kolicina 
+	FROM vino v
+    JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON p.id_berba = b.id
+    JOIN punjenje pu ON p.id = pu.id_proizvod
+    ORDER BY pu.pocetak_punjenja, pu.oznaka_serije ASC;
+
+------------------------------------------- VID
 
 -- upit, koji zaposlenik je primio najviše narudžbi
 
@@ -2484,9 +2547,6 @@ END;
 //
 DELIMITER ;
 CALL azuriraj_status_zaposlenika(7, 'aktivan');  -- Postavlja zaposlenika s ID 7 kao aktivnog
-
-
-
 
 
 -- Trigger za automatsko postavljanje statusa na 'aktivan' prilikom unosa novog zaposlenika

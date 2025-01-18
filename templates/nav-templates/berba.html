@@ -15,7 +15,7 @@
     <section class="tablica">
         <div class="tablica_container">
             <div class="tablica_navbar">
-                <button class="tablica_nav-button" id="addEmployeeBtn">Dodaj novi unos</button>
+                <button class="tablica_nav-button" id="addEmployeeBtn" data-url='/dodaj_berbu_forma'>Dodaj novi unos</button>
                 <button class="tablica_nav-button" id="editDeleteBtn">Uredi/Obriši</button>
                 <div class="dropdown-container">
                     <button class="tablica_nav-button dropdown-toggle" id="sortBtn">Sortiraj</button>
@@ -32,8 +32,7 @@
             <table class="tablica_table">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>ID_vino</th>
+                        <th>Naziv vina</th>
                         <th>Godina berbe</th>
                         <th>Postotak alkohola</th>
                     </tr>
@@ -44,11 +43,10 @@
                         <td>{{ row[0] }}</td>
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
-                        <td>{{ row[3] }}%</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4">Nema podataka.</td>
+                        <td colspan="3">Nema podataka.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -1,4 +1,6 @@
-from flask import Flask, render_template, jsonify, request, session
+from datetime import datetime
+
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session
 from flask_mysqldb import MySQL, MySQLdb
 
 
@@ -104,7 +106,7 @@ def show_proizvod():
 @app.route('/berba', methods=['GET'])
 def show_berba():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM berba;")
+    cur.execute('SELECT v.naziv, b.godina_berbe, b.postotak_alkohola FROM berba b JOIN vino v ON v.id = b.id_vino;')
     berba_lista = cur.fetchall()
     cur.close()
 
@@ -114,11 +116,38 @@ def show_berba():
 def berba():
     return render_template('nav-templates/berba.html')
 
+@app.route('/dodaj_berbu_forma', methods=['GET'])
+def dodaj_berbu_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id, naziv FROM vino;')
+    vino_izbor = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/dodaj_berbu_forma.html', vina=vino_izbor)
+
+
+@app.route('/dodaj_berbu', methods=['POST'])
+def dodaj_berbu():
+    id_vino = request.form['id_vino']
+    godina_berbe = int(request.form['godina_berbe'])
+    postotak_alkohola = request.form['postotak_alkohola']
+
+    trenutna_godina = datetime.now().year
+    if godina_berbe > trenutna_godina:
+        return "Godina berbe ne može biti u budućnosti.", 400
+    cur = mysql.connection.cursor()
+    cur.callproc('dodaj_novu_berbu', [id_vino, godina_berbe, postotak_alkohola])
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('show_berba'))
+
+
 
 @app.route('/punjenje', methods=['GET'])
 def show_punjenje():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM punjenje;")
+    cur.execute('SELECT * FROM punjenje_pogled;')
     punjenje_lista = cur.fetchall()
     cur.close()
 
@@ -132,7 +161,7 @@ def punjenje():
 @app.route('/repromaterijal_proizvod', methods=['GET'])
 def show_repromaterijal_proizvod():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM repromaterijal_proizvod;")
+    cur.execute("SELECT * FROM repromaterijal_po_proizvodu;")
     repromaterijal_proizvod_lista = cur.fetchall()
     cur.close()
 
@@ -174,7 +203,7 @@ def stavka_narudzbe():
 @app.route('/stanje_skladista_vina', methods=['GET'])
 def show_stanje_skladista_vina():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM stanje_skladista_vina;")
+    cur.execute("SELECT * FROM vino_skladiste;")
     stanje_skladista_vina_lista = cur.fetchall()
     cur.close()
 
@@ -188,7 +217,7 @@ def stanje_skladista_vina():
 @app.route('/stanje_skladista_proizvoda', methods=['GET'])
 def show_stanje_skladista_proizvoda():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM stanje_skladista_proizvoda;")
+    cur.execute('SELECT * FROM proizvod_skladiste;')
     stanje_skladista_proizvoda_lista = cur.fetchall()
     cur.close()
 
@@ -202,7 +231,7 @@ def stanje_skladista_proizvoda():
 @app.route('/stanje_skladista_repromaterijala', methods=['GET'])
 def show_stanje_skladista_repromaterijala():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM stanje_skladista_repromaterijala;")
+    cur.execute("SELECT * FROM repromaterijal_skladiste;")
     stanje_skladista_repromaterijala_lista = cur.fetchall()
     cur.close()
 
@@ -216,7 +245,7 @@ def stanje_skladista_repromaterijala():
 @app.route('/kvartalni_pregled_prodaje', methods=['GET'])
 def show_kvartalni_pregled_prodaje():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM kvartalni_pregled_prodaje;")
+    cur.execute("SELECT * FROM kvartalna_prodaja;")
     kvartalni_pregled_prodaje_lista = cur.fetchall()
     cur.close()
 

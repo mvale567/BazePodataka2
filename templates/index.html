@@ -32,14 +32,14 @@
                                 class="fas fa-box"></i> Repromaterijal po proizvodu</a></li>
                     <li><a href="{{ url_for('punjenje') }}" target="outer-content-frame" class="nav-button"><i
                                 class="fas fa-cogs"></i> Punjenje proizvoda </a></li>
-                    <li><a href="#" class="nav-button" id="zahtjeviBtn"><i class="fas fa-tasks"></i> Zahtjevi <i class="fas fa-chevron-down dropdown-icon"></i></a>
+                    <li><a href="#" class="nav-button gumb" id="zahtjeviBtn"><i class="fas fa-tasks"></i> Zahtjevi <i class="fas fa-chevron-down dropdown-icon"></i></a>
                         <ul class="dropdown">
                             <li><a href="{{ url_for('zahtjev_za_narudzbu') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-file-alt"></i> Zahtjev za narudžbu</a></li>
                             <li><a href="{{ url_for('stavka_narudzbe') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-file-alt"></i> Stavke narudžbi </a></li>
                             <li><a href="#" class="nav-button"><i class="fas fa-file-import"></i> Zahtjev za nabavu</a></li>
                         </ul>
                     </li>
-                    <li><a href="#" class="nav-button" id="skladistaBtn"><i class="fas fa-warehouse"></i> Skladišta <i class="fas fa-chevron-down dropdown-icon"></i></a>
+                    <li><a href="#" class="nav-button gumb" id="skladistaBtn"><i class="fas fa-warehouse"></i> Skladišta <i class="fas fa-chevron-down dropdown-icon"></i></a>
                         <ul class="dropdown">
                             <li><a href="{{ url_for('stanje_skladista_vina') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-warehouse"></i> Stanje skladišta vina</a></li>
                             <li><a href="{{ url_for('stanje_skladista_proizvoda') }}" target="outer-content-frame" class="nav-button"><i class="fas fa-warehouse"></i> Stanje skladišta proizvoda</a></li>

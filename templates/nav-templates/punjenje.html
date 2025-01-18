@@ -32,8 +32,7 @@ berba.html<!DOCTYPE html>
             <table class="tablica_table">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>ID_proizvod</th>
+                        <th>Proizvod</th>
                         <th>Oznaka serije</th>
                         <th>Početak punjenja</th>
                         <th>Završetak punjenja</th>
@@ -48,11 +47,10 @@ berba.html<!DOCTYPE html>
                         <td>{{ row[2] }}</td>
                         <td>{{ row[3] }}</td>
                         <td>{{ row[4] }}</td>
-                        <td>{{ row[5] }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6">Nema podataka.</td>
+                        <td colspan="5">Nema podataka.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

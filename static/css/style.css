@@ -147,7 +147,7 @@ body {
     padding-left: 15px;
 }
 
-#zahtjeviBtn.active+.dropdown {
+.gumb.active+.dropdown {
     display: block;
 }
 
@@ -156,7 +156,7 @@ body {
     transition: transform 0.3s ease;
 }
 
-#zahtjeviBtn.active .dropdown-icon {
+.gumb.active .dropdown-icon {
     transform: rotate(180deg);
 }
 
@@ -180,6 +180,36 @@ body {
     border: none;
     background-color: transparent;
 }
+
+
+form {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #507cd4;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+.label {
+    font-size: 16px;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+
+.input-large {
+    width: 250px;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+
+
+
 
 
 /* ----------------------------------------- */
@@ -478,6 +508,7 @@ td[colspan="8"] {
     padding: 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+
 
 .tablica_nav-button {
     background-color: #00aaff;
