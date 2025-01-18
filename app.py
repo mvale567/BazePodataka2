@@ -287,6 +287,15 @@ def transport():
     
     return render_template('nav-templates/transport.html', transport=transport)
 
+@app.route('/racun', methods=['GET'])
+def racun():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM racun;')
+    racun = cur.fetchall()
+    cur.close()
+    
+    return render_template('nav-templates/racun.html', racun=racun)
+
 
 @app.route('/')
 def index():
