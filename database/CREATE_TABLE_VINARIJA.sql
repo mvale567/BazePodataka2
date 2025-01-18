@@ -1363,12 +1363,17 @@ CREATE TABLE kvartalni_pregled_prodaje (
 
 
 DELIMITER //
-CREATE PROCEDURE azuriraj_prodane_proizvode (IN p_id_proizvod INTEGER, IN p_kolicina INTEGER, IN p_ukupni_iznos DECIMAL(10,2), p_pocetni_datum DATE, p_zavrsni_datum DATE)
+CREATE PROCEDURE azuriraj_prodane_proizvode(IN p_id_proizvod INTEGER, IN p_kolicina INTEGER, IN p_ukupni_iznos DECIMAL(10,2), p_pocetni_datum DATE, p_zavrsni_datum DATE)
 BEGIN
-	INSERT INTO kvartalni_pregled_prodaje VALUES (p_id_proizvod, p_kolicina, p_ukupni_iznos, p_pocetni_datum, p_zavrsni_datum)
-	ON DUPLICATE KEY UPDATE 
-		kolicina = kolicina + VALUES(kolicina),
-        ukupni_iznos = ukupni_iznos + VALUES(ukupni_iznos);
+	IF NOT EXISTS (SELECT 1 FROM kvartalni_pregled_prodaje WHERE id_proizvod = p_id_proizvod AND pocetni_datum = p_pocetni_datum AND zavrsni_datum = p_zavrsni_datum) THEN
+		INSERT INTO kvartalni_pregled_prodaje VALUES (p_id_proizvod, p_kolicina, p_ukupni_iznos, p_pocetni_datum, p_zavrsni_datum);
+	ELSE
+		UPDATE kvartalni_pregled_prodaje 
+			SET kolicina = kolicina + p_kolicina, ukupni_iznos = ukupni_iznos + p_ukupni_iznos
+        WHERE id_proizvod = p_id_proizvod
+        AND pocetni_datum = p_pocetni_datum 
+        AND zavrsni_datum = p_zavrsni_datum;
+    END IF;
 END //
 DELIMITER ;
 
@@ -1393,6 +1398,18 @@ BEGIN
 		SET handler_broj = 1;
     END;
     
+	IF DATE_FORMAT(p_pocetni_datum, '%d.%m.') NOT IN ('01.01.', '01.04.', '01.07.', '01.10.') THEN
+		SIGNAL SQLSTATE '45008' SET MESSAGE_TEXT = 'Neispravan unos, početni datum mora biti početak kvartala!';
+	END IF;
+	
+    IF DATE_FORMAT(p_zavrsni_datum, '%d.%m.') NOT IN ('31.03.', '30.6.', '30.09.', '31.12.') THEN
+		SIGNAL SQLSTATE '45009' SET MESSAGE_TEXT = 'Neispravan unos, završni datum mora biti završetak kvartala!';
+	END IF;
+    
+    IF p_pocetni_datum > p_zavrsni_datum THEN
+		SIGNAL SQLSTATE '45010' SET MESSAGE_TEXT = 'Početni datum ne može biti kasniji od završnog datuma!';
+	END IF;
+    
     OPEN cur;
     
     petlja: LOOP
@@ -1411,37 +1428,18 @@ END //
 DELIMITER ;
 
 
-DELIMITER //
-CREATE TRIGGER bi_kvartalni_pregled_prodaje
-	BEFORE INSERT ON kvartalni_pregled_prodaje
-    FOR EACH ROW
-BEGIN
-	IF DATE_FORMAT(new.pocetni_datum, '%d.%m.') NOT IN ('01.01.', '01.04.', '01.07.', '01.10.') THEN
-		SIGNAL SQLSTATE '45008' SET MESSAGE_TEXT = 'Neispravan unos, početni datum mora biti početak kvartala!';
-	END IF;
-	
-    IF DATE_FORMAT(new.zavrsni_datum, '%d.%m.') NOT IN ('31.03.', '30.6.', '30.09.', '31.12.') THEN
-		SIGNAL SQLSTATE '45009' SET MESSAGE_TEXT = 'Neispravan unos, završni datum mora biti završetak kvartala!';
-	END IF;
-END //
-DELIMITER ;
-
-
 CALL azuriraj_prodaju(STR_TO_DATE('01.10.2024.', '%d.%m.%Y.'), STR_TO_DATE('31.12.2024.', '%d.%m.%Y.'));
+
 
 SELECT * FROM kvartalni_pregled_prodaje;
 
 CREATE EVENT kvartalni_izvjestaj
 ON SCHEDULE EVERY 3 MONTH
-STARTS '2025-01-01 00:00:00'
+STARTS '2025-04-01 00:00:00'
 DO	
 	CALL azuriraj_prodaju(CURDATE() - INTERVAL 3 MONTH, CURDATE() - INTERVAL 1 DAY);
 
 SHOW EVENTS;
-
-SET @datumrani = (SELECT MIN(datum_racuna) FROM racun);
-SET @datumkasni = (SELECT MAX(datum_racuna) FROM racun);
--- CALL azuriraj_prodaju(@datumrani, @datumkasni);
 
 
 DELIMITER //
@@ -1456,7 +1454,7 @@ BEGIN
 		WHERE zzn.id_transport = p_id_transport;
         
 	IF kolicina_transporta IS NULL THEN
-		SIGNAL SQLSTATE '45010' SET MESSAGE_TEXT = 'Transport mora biti dodijeljen barem jednoj narudžbi!';
+		SIGNAL SQLSTATE '45011' SET MESSAGE_TEXT = 'Transport mora biti dodijeljen barem jednoj narudžbi!';
 	ELSE
 		UPDATE transport
 			SET kolicina = kolicina_transporta
@@ -1562,10 +1560,7 @@ SELECT CONCAT(v.naziv,' ', b.godina_berbe) AS vino, ssv.kolicina
 	FROM vino v
     JOIN berba b ON v.id = b.id_vino
     JOIN stanje_skladista_vina ssv ON ssv.id_berba = b.id;
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
 
 CREATE VIEW proizvod_skladiste AS
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, ssp.kolicina
@@ -1612,12 +1607,9 @@ SELECT sn.id, sn.id_zahtjev_za_narudzbu, CONCAT(v.naziv, ' ', b.godina_berbe, ' 
     JOIN proizvod p ON p.id = sn.id_proizvod
     JOIN berba b ON b.id = p.id_berba
     JOIN vino v ON v.id = b.id_vino
-<<<<<<< Updated upstream
     ORDER BY sn.id;
     
-=======
-    ORDER BY sn.id;    
->>>>>>> Stashed changes
+
 
 
 ------------------------------------------- VID
@@ -2247,7 +2239,9 @@ END//
 DELIMITER ;
 */
 -- procedure
-SET GLOBAL SQL_SAFE_UPDATES = 0;
+
+
+
 
 -- 1. Procedura: Dodavanje novog transporta
 DELIMITER //
@@ -2653,8 +2647,4 @@ CREATE USER 'HRManager'@'localhost' IDENTIFIED BY 'ljudi123';
 
 GRANT SELECT, INSERT, UPDATE ON vinarija.odjel TO 'HRManager'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON vinarija.zaposlenik TO 'HRManager'@'localhost';
-<<<<<<< Updated upstream
 GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
-=======
-GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
->>>>>>> Stashed changes
