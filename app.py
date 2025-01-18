@@ -321,6 +321,15 @@ def vino():
 def repromaterijal():
     return render_template('nav-templates/repromaterijal.html')
 
+@app.route('/transport', methods=['GET'])
+def transport():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM transport;')
+    transport = cur.fetchall()
+    cur.close()
+    
+    return render_template('nav-templates/transport.html', transport=transport)
+
 
 
 
@@ -351,10 +360,6 @@ def prijevoznik():
 @app.route('/proizvod')
 def proizvod():
     return render_template('nav-templates/proizvod.html')
-
-
-#view
-
 
 
 if __name__ == "__main__":
