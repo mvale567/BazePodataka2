@@ -1531,6 +1531,10 @@ UPDATE transport
 	SET datum_dolaska = CURDATE()
     WHERE id = 17;
 
+
+
+
+
 -- pogled za aplikaciju
 
 CREATE VIEW repromaterijal_po_proizvodu AS
@@ -1541,24 +1545,22 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, r
 	JOIN repromaterijal_proizvod rp ON rp.id_proizvod = p.id
     JOIN repromaterijal r ON rp.id_repromaterijal = r.id;
     
-SELECT * FROM repromaterijal_po_proizvodu;
 
 DELIMITER //
 CREATE PROCEDURE dodaj_novu_berbu (IN p_id_vino INTEGER, IN p_godina_berbe INTEGER, IN p_postotak_alkohola DECIMAL(5, 2))
 BEGIN
-	IF p_godina_berbe > YEAH(CURDATE()) THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Godina berbe ne može biti u budućnosti';
-    END IF;
     INSERT INTO berba (id_vino, godina_berbe, postotak_alkohola)
     VALUES (p_id_vino, p_godina_berbe, p_postotak_alkohola);
 END //
 DELIMITER ;
+
 
 CREATE VIEW vino_skladiste AS 
 SELECT CONCAT(v.naziv,' ', b.godina_berbe) AS vino, ssv.kolicina
 	FROM vino v
     JOIN berba b ON v.id = b.id_vino
     JOIN stanje_skladista_vina ssv ON ssv.id_berba = b.id;
-SELECT * FROM stanje_skladista_vina;
+
 
 CREATE VIEW proizvod_skladiste AS
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, ssp.kolicina
@@ -1567,10 +1569,12 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, s
     JOIN proizvod p ON p.id_berba = b.id
     JOIN stanje_skladista_proizvoda ssp ON p.id = ssp.id_proizvod;
 
+
 CREATE VIEW repromaterijal_skladiste AS
 SELECT r.opis AS repromaterijal, ssr.kolicina
 	FROM repromaterijal r
     JOIN stanje_skladista_repromaterijala ssr ON r.id = ssr.id_repromaterijal;
+
 
 CREATE VIEW kvartalna_prodaja AS
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, kpp.kolicina, kpp.ukupni_iznos, kpp.pocetni_datum, kpp.zavrsni_datum
@@ -1579,6 +1583,7 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, k
     JOIN proizvod p ON p.id_berba = b.id
     JOIN kvartalni_pregled_prodaje kpp ON p.id = kpp.id_proizvod;
 
+
 CREATE VIEW punjenje_pogled AS
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, pu.oznaka_serije, pu.pocetak_punjenja, pu.zavrsetak_punjenja, pu.kolicina 
 	FROM vino v
@@ -1586,14 +1591,25 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, p
     JOIN proizvod p ON p.id_berba = b.id
     JOIN punjenje pu ON p.id = pu.id_proizvod
     ORDER BY pu.pocetak_punjenja ASC, pu.oznaka_serije ASC;
+ 
+ 
+CREATE VIEW narudzbe AS
+SELECT zzn.id, k.naziv AS kupac, CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, (CASE WHEN zzn.id_transport IS NULL THEN 'N/A' ELSE zzn.id_transport END) AS id_transport, zzn.datum_zahtjeva, zzn.ukupni_iznos, zzn.status_narudzbe
+	FROM zahtjev_za_narudzbu zzn
+    JOIN zaposlenik z ON z.id = zzn.id_zaposlenik
+    JOIN kupac k ON k.id = zzn.id_kupac
+    ORDER BY zzn.id;
+  
+  
+CREATE VIEW stavke AS
+SELECT sn.id, sn.id_zahtjev_za_narudzbu, CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, sn.kolicina, sn.iznos_stavke
+	FROM stavka_narudzbe sn
+    JOIN proizvod p ON p.id = sn.id_proizvod
+    JOIN berba b ON b.id = p.id_berba
+    JOIN vino v ON v.id = b.id_vino
+    ORDER BY sn.id;
     
-SELECT * FROM punjenje_pogled;
-SELECT pu.id, CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, pu.oznaka_serije, pu.pocetak_punjenja, pu.zavrsetak_punjenja, pu.kolicina 
-	FROM vino v
-    JOIN berba b ON v.id = b.id_vino
-    JOIN proizvod p ON p.id_berba = b.id
-    JOIN punjenje pu ON p.id = pu.id_proizvod
-    ORDER BY pu.pocetak_punjenja, pu.oznaka_serije ASC;
+
 
 ------------------------------------------- VID
 
@@ -1836,6 +1852,9 @@ BEGIN
     END IF;
 END//
 DELIMITER ;
+
+
+
 
 -- INSERT INTO berba VALUES (64, 2, 2027, 14.00);
 
@@ -2458,7 +2477,7 @@ CALL azuriraj_status_zaposlenika(7, 'aktivan');
 
 
 -- --------------------------------------------------
-
+DROP FUNCTION IF EXISTS broj_admin_korisnika;
 -- 2. Funkcija za broj admina
 DELIMITER //
 CREATE FUNCTION broj_admin_korisnika()
