@@ -64,7 +64,8 @@ CREATE TABLE proizvod (
     id_berba INTEGER NOT NULL,
 	volumen DECIMAL(4,2) NOT NULL,
     cijena DECIMAL(10, 2) NOT NULL CHECK (cijena > 0),
-    CONSTRAINT proizvod__berba_fk FOREIGN KEY (id_berba) REFERENCES berba(id)
+    CONSTRAINT proizvod__berba_fk FOREIGN KEY (id_berba) REFERENCES berba(id),
+    INDEX (id_berba)
 );
 
 
@@ -105,7 +106,8 @@ CREATE TABLE repromaterijal (
     opis TEXT,
     jedinicna_cijena DECIMAL(10, 2) NOT NULL,
     FOREIGN KEY (id_dobavljac) REFERENCES dobavljac(id),
-    CONSTRAINT repromaterijal_cijena_ck CHECK (jedinicna_cijena > 0)
+    CONSTRAINT repromaterijal_cijena_ck CHECK (jedinicna_cijena > 0),
+    INDEX (id_dobavljac)
 );
 
 
@@ -234,7 +236,7 @@ CREATE TABLE zahtjev_za_nabavu (
     id_repromaterijal INT NOT NULL,
     kolicina INT NOT NULL,
     datum_zahtjeva DATE NOT NULL,
-    status_nabave ENUM('u obradi', 'odobreno', 'odbijeno') NOT NULL,
+    status_nabave ENUM('u obradi', 'odobreno', 'odbijeno', 'dostavljeno') NOT NULL,
     id_zaposlenik INT NOT NULL,
     FOREIGN KEY (id_repromaterijal) REFERENCES repromaterijal(id),
     FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id)
@@ -1560,7 +1562,10 @@ SELECT CONCAT(v.naziv,' ', b.godina_berbe) AS vino, ssv.kolicina
 	FROM vino v
     JOIN berba b ON v.id = b.id_vino
     JOIN stanje_skladista_vina ssv ON ssv.id_berba = b.id;
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 
 CREATE VIEW proizvod_skladiste AS
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, ssp.kolicina
@@ -1607,8 +1612,12 @@ SELECT sn.id, sn.id_zahtjev_za_narudzbu, CONCAT(v.naziv, ' ', b.godina_berbe, ' 
     JOIN proizvod p ON p.id = sn.id_proizvod
     JOIN berba b ON b.id = p.id_berba
     JOIN vino v ON v.id = b.id_vino
+<<<<<<< Updated upstream
     ORDER BY sn.id;
     
+=======
+    ORDER BY sn.id;    
+>>>>>>> Stashed changes
 
 
 ------------------------------------------- VID
@@ -1861,20 +1870,25 @@ DELIMITER ;
 SELECT *
 	FROM berba;
     
--- trigger koji ažurira ukupnu dostupnu količinu repromaterijala na stanju na temelju odobrenog zahtjeva za nabavu
-
+-- trigger koji dodaje repromaterijal u skladiste_repromaterijal na temelju promijene statusa zahtjeva za nabavu u 'dostavljeno'
+DROP TRIGGER au_dodaj_dostavljeni_repromaterijal;
 DELIMITER //
-CREATE TRIGGER au_azuriraj_kolicinu_repromaterijala
+CREATE TRIGGER au_dodaj_dostavljeni_repromaterijal
 AFTER UPDATE ON zahtjev_za_nabavu
 FOR EACH ROW
-BEGIN
-    IF NEW.status_nabave = 'odobreno' THEN
-        UPDATE repromaterijal
-        SET kolicina = kolicina + NEW.kolicina
-        WHERE id = NEW.id_repromaterijal;
+BEGIN	   
+    IF NEW.status_nabave = 'dostavljeno' THEN		
+        INSERT INTO skladiste_repromaterijal (id_repromaterijal, datum, tip_transakcije, kolicina, lokacija) VALUES(NEW.id_repromaterijal, NOW(), 'ulaz', NEW.kolicina, 'Skladište D');  
     END IF;
 END//
 DELIMITER ;
+
+SELECT * FROM zahtjev_za_nabavu;
+SELECT * FROM skladiste_repromaterijal;
+
+UPDATE zahtjev_za_nabavu
+	SET status_nabave = 'dostavljeno'
+	WHERE id = 23;
 
 
 -- procedura koja omogućuje ažuriranje statusa narudžbe u tablici zahtjev_za_narudzbu
@@ -2639,4 +2653,8 @@ CREATE USER 'HRManager'@'localhost' IDENTIFIED BY 'ljudi123';
 
 GRANT SELECT, INSERT, UPDATE ON vinarija.odjel TO 'HRManager'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON vinarija.zaposlenik TO 'HRManager'@'localhost';
+<<<<<<< Updated upstream
 GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
+=======
+GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
+>>>>>>> Stashed changes

@@ -70,7 +70,7 @@ def show_zaposlenik():
     return render_template('nav-templates/zaposlenik.html', zaposlenik=zaposlenik)
 
 @app.route('/repromaterijal', methods=['GET'])
-def show_repromaterijal():
+def repromaterijal():
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM repromaterijal;")
     repromaterijal = cur.fetchall()
@@ -79,7 +79,7 @@ def show_repromaterijal():
     return render_template('nav-templates/repromaterijal.html', repromaterijal=repromaterijal)
 
 @app.route('/vino', methods=['GET'])
-def show_vino():
+def vino():
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM vino;")
     vino = cur.fetchall()
@@ -115,7 +115,7 @@ def show_prijevoznik():
 
 
 @app.route('/proizvod', methods=['GET'])
-def show_proizvod():
+def proizvod():
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM proizvod;")
     proizvod = cur.fetchall()
@@ -178,7 +178,94 @@ def dodaj_berbu():
     mysql.connection.commit()
     cur.close()
 
-    return redirect(url_for('berba'))
+    return redirect(url_for('show_berba'))
+
+@app.route('/dodaj_repromaterijal_forma', methods=['GET'])
+def dodaj_repromaterijal_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM repromaterijal;')
+    repromaterijal = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/insert_repromaterijal.html', repromaterijal=repromaterijal)
+
+@app.route('/dodaj_repromaterijal', methods=['POST'])
+def dodaj_repromaterijal():
+    id_dobavljac = request.form['id_dobavljac']
+    vrsta = request.form['vrsta']
+    opis = request.form['opis']
+    jedinicna_cijena = request.form['jedinicna_cijena']
+
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO repromaterijal (id_dobavljac, vrsta, opis, jedinicna_cijena) VALUES(%s, %s, %s, %s)",
+            (id_dobavljac, vrsta, opis, jedinicna_cijena))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('repromaterijal'))
+
+@app.route('/izbrisi_repromaterijal_forma', methods=['GET'])
+def izbrisi_repromaterijal_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM repromaterijal;')
+    repromaterijal = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/obrisi_repromaterijal.html', repromaterijal=repromaterijal)
+
+@app.route('/izbrisi_repromaterijal', methods=['POST'])
+def izbrisi_repromaterijal():
+    id_repromaterijal = request.form['id_repromaterijal']
+
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM repromaterijal WHERE id = %s", (id_repromaterijal,))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('repromaterijal'))
+
+@app.route('/dodaj_proizvod_forma', methods=['GET'])
+def dodaj_proizvod_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM proizvod;')
+    proizvod = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/dodaj_proizvod.html', proizvod=proizvod)
+
+@app.route('/dodaj_proizvod', methods=['POST'])
+def dodaj_proizvod():
+    id_berba = request.form['id_berba']
+    volumen = request.form['volumen']
+    cijena = request.form['cijena']
+
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO proizvod (id_berba, volumen, cijena) VALUES(%s, %s, %s)",
+            (id_berba, volumen, cijena))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('proizvod'))
+
+@app.route('/izbrisi_proizvod_forma', methods=['GET'])
+def izbrisi_proizvod_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM proizvod;')
+    proizvod = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/obrisi_proizvod.html', proizvod=proizvod)
+
+@app.route('/izbrisi_proizvod', methods=['POST'])
+def izbrisi_proizvod():
+    id_proizvod = request.form['id_proizvod']
+
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM proizvod WHERE id = %s", (id_proizvod,))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('proizvod'))
 
 
 @app.route('/punjenje', methods=['GET'])
@@ -270,13 +357,6 @@ def kvartalni_pregled_prodaje():
     return render_template('nav-templates/kvartalni_pregled_prodaje.html', kvartalni_pregled_prodaje=kvartalni_pregled_prodaje_lista)
 
 
-@app.route('/vino')
-def vino():
-    return render_template('nav-templates/vino.html')
-
-@app.route('/repromaterijal')
-def repromaterijal():
-    return render_template('nav-templates/repromaterijal.html')
 
 @app.route('/transport', methods=['GET'])
 def transport():
@@ -320,10 +400,6 @@ def kupac():
 @app.route('/prijevoznik')
 def prijevoznik():
     return render_template('nav-templates/prijevoznik.html')
-
-@app.route('/proizvod')
-def proizvod():
-    return render_template('nav-templates/proizvod.html')
 
 
 if __name__ == "__main__":
