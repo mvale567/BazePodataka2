@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Kupac</title>
+    <title>Vino</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
@@ -15,7 +15,7 @@
     <section class="kupac">
         <div class="kupac_container">
             <div class="kupac_navbar">
-                <button class="kupac_nav-button" id="addEmployeeBtn">Dodaj kupca</button>
+                <button class="kupac_nav-button" id="addEmployeeBtn">Dodaj vino</button>
                 <button class="kupac_nav-button" id="editDeleteBtn">Uredi/Obriši</button>
                 <div class="dropdown-container">
                     <button class="kupac_nav-button dropdown-toggle" id="sortBtn">Sortiraj</button>
@@ -34,25 +34,17 @@
                     <tr>
                         <th>ID</th>
                         <th>Naziv</th>
-                        <th>OIB</th>
-                        <th>Ime</th>
-                        <th>Prezime</th>
-                        <th>Adresa</th>
-                        <th>Email</th>
-                        <th>Telefon</th>
+                        <th>Vrsta</th>
+                        <th>Sorta</th>                        
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in kupac %}
+                    {% for row in vino %}
                     <tr>
                         <td>{{ row[0] }}</td>
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
-                        <td>{{ row[3] }}</td>
-                        <td>{{ row[4] }}</td>
-                        <td>{{ row[5] }}</td>
-                        <td>{{ row[6] }}</td>
-                        <td>{{ row[7] }}</td>
+                        <td>{{ row[3] }}</td>                        
                     </tr>
                     {% else %}
                     <tr>

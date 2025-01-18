@@ -69,6 +69,27 @@ def show_zaposlenik():
 
     return render_template('nav-templates/zaposlenik.html', zaposlenik=zaposlenik)
 
+@app.route('/repromaterijal', methods=['GET'])
+def show_repromaterijal():
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM repromaterijal;")
+    repromaterijal = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/repromaterijal.html', repromaterijal=repromaterijal)
+
+@app.route('/vino', methods=['GET'])
+def show_vino():
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM vino;")
+    vino = cur.fetchall()
+    cur.close()
+
+    #return jsonify(vino)
+    print(vino)
+
+    return render_template('nav-templates/vino.html', vino=vino)
+
 
 @app.route('/kupac', methods=['GET'])
 def show_kupac():
@@ -278,6 +299,14 @@ def show_kvartalni_pregled_prodaje():
 def kvartalni_pregled_prodaje():
     return render_template('nav-templates/kvartalni_pregled_prodaje.html')
 
+@app.route('/vino')
+def vino():
+    return render_template('nav-templates/vino.html')
+
+@app.route('/repromaterijal')
+def repromaterijal():
+    return render_template('nav-templates/repromaterijal.html')
+
 
 
 
@@ -308,7 +337,6 @@ def prijevoznik():
 @app.route('/proizvod')
 def proizvod():
     return render_template('nav-templates/proizvod.html')
-
 
 
 
