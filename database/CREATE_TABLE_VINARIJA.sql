@@ -2635,3 +2635,8 @@ GRANT SELECT ON vinarija.vino_skladiste TO 'SkladisteSef'@'localhost';
 GRANT SELECT ON vinarija.proizvod_skladiste TO 'SkladisteSef'@'localhost';
 GRANT SELECT ON vinarija.repromaterijal_skladiste TO 'SkladisteSef'@'localhost';
 
+CREATE USER 'HRManager'@'localhost' IDENTIFIED BY 'ljudi123';
+
+GRANT SELECT, INSERT, UPDATE ON vinarija.odjel TO 'HRManager'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vinarija.zaposlenik TO 'HRManager'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
