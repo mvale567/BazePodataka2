@@ -102,6 +102,29 @@ def show_proizvod():
 
     return render_template('nav-templates/proizvod.html', proizvod=proizvod)
 
+#Vid-dobavljac
+@app.route('/dobavljac', methods=['GET'])
+def dobavljac():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM dobavljac;')
+    dobavljac = cur.fetchall()
+    cur.close()
+    
+    print(dobavljac)
+
+    return render_template('nav-templates/dobavljac.html', dobavljac=dobavljac)
+
+@app.route('/zahtjev_za_nabavu', methods=['GET'])
+def zahtjev_za_nabavu():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM zahtjev_za_nabavu;')
+    zahtjev_za_nabavu = cur.fetchall()
+    cur.close()
+    
+    print(zahtjev_za_nabavu)
+
+    return render_template('nav-templates/zahtjev_za_nabavu.html', zahtjev_za_nabavu=zahtjev_za_nabavu)
+
 
 @app.route('/berba', methods=['GET'])
 def show_berba():
@@ -215,17 +238,17 @@ def stanje_skladista_vina():
 
 
 @app.route('/stanje_skladista_proizvoda', methods=['GET'])
-def show_stanje_skladista_proizvoda():
+def stanje_skladista_proizvoda():
     cur = mysql.connection.cursor()
-    cur.execute('SELECT * FROM proizvod_skladiste;')
+    cur.execute('SELECT * FROM skladiste_proizvod;')
     stanje_skladista_proizvoda_lista = cur.fetchall()
     cur.close()
 
     return render_template('nav-templates/stanje_skladista_proizvoda.html', stanje_skladista_proizvoda=stanje_skladista_proizvoda_lista)
 
-@app.route('/stanje_skladista_proizvoda')
-def stanje_skladista_proizvoda():
-    return render_template('nav-templates/stanje_skladista_proizvoda.html')
+#@app.route('/stanje_skladista_proizvoda')
+#def stanje_skladista_proizvoda():
+    #return render_template('nav-templates/stanje_skladista_proizvoda.html')
 
 
 @app.route('/stanje_skladista_repromaterijala', methods=['GET'])
@@ -269,6 +292,10 @@ def home():
 @app.route('/zaposlenik')
 def zaposlenik():
     return render_template('nav-templates/zaposlenik.html')
+
+#@app.route('/dobavljac')
+#def dobavljac():
+    #return render_template('nav-templates/dobavljac.html')
 
 @app.route('/kupac')
 def kupac():
