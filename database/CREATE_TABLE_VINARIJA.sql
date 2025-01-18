@@ -2590,3 +2590,10 @@ DELIMITER ;
 CALL prikazi_prava_korisnika(7);
 
 SELECT * FROM uloge;
+
+CREATE USER 'SkladisteSef'@'localhost' IDENTIFIED BY 'skladiste123';
+
+GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_proizvod TO 'SkladisteSef'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_vino TO 'SkladisteSef'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_repromaterijal TO 'SkladisteSef'@'localhost';
+
