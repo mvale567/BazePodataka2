@@ -2591,6 +2591,18 @@ CALL prikazi_prava_korisnika(7);
 
 SELECT * FROM uloge;
 
+CREATE VIEW pogled_transakcija_skladista AS
+SELECT 
+    id_berba,
+    lokacija,
+    tip_transakcije,
+    SUM(kolicina) AS ukupna_kolicina,
+    COUNT(*) AS broj_transakcija
+FROM skladiste_vino
+GROUP BY id_berba, lokacija, tip_transakcije
+ORDER BY id_berba, lokacija, tip_transakcije;
+
+
 CREATE USER 'SkladisteSef'@'localhost' IDENTIFIED BY 'skladiste123';
 
 GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_proizvod TO 'SkladisteSef'@'localhost';
@@ -2600,3 +2612,7 @@ GRANT SELECT, INSERT, UPDATE ON vinarija.stanje_skladista_proizvoda TO 'Skladist
 GRANT SELECT, INSERT, UPDATE ON vinarija.stanje_skladista_repromaterijala TO 'SkladisteSef'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON vinarija.stanje_skladista_vina TO 'SkladisteSef'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON vinarija.mp_stanje_skladista_vina TO 'SkladisteSef'@'localhost';
+GRANT SELECT ON vinarija.vino_skladiste TO 'SkladisteSef'@'localhost';
+GRANT SELECT ON vinarija.proizvod_skladiste TO 'SkladisteSef'@'localhost';
+GRANT SELECT ON vinarija.repromaterijal_skladiste TO 'SkladisteSef'@'localhost';
+

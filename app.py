@@ -353,7 +353,10 @@ def proizvod():
     return render_template('nav-templates/proizvod.html')
 
 
+#view
+
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
-# 
+
