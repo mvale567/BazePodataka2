@@ -261,11 +261,25 @@ def stanje_skladista_vina():
 @app.route('/stanje_skladista_proizvoda', methods=['GET'])
 def stanje_skladista_proizvoda():
     cur = mysql.connection.cursor()
-    cur.execute('SELECT * FROM skladiste_proizvod;')
+    cur.execute('SELECT * FROM proizvod_skladiste;')
     stanje_skladista_proizvoda_lista = cur.fetchall()
     cur.close()
 
     return render_template('nav-templates/stanje_skladista_proizvoda.html', stanje_skladista_proizvoda=stanje_skladista_proizvoda_lista)
+
+@app.route('/skladiste_proizvod', methods=['GET'])
+def skladiste_proizvod():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM skladiste_proizvod;')
+    skladiste_proizvod = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/skladiste_proizvod.html', skladiste_proizvod=skladiste_proizvod)
+
+
+
+
+
 
 #@app.route('/stanje_skladista_proizvoda')
 #def stanje_skladista_proizvoda():
@@ -342,3 +356,4 @@ def proizvod():
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
+# 
