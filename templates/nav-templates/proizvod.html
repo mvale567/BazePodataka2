@@ -17,9 +17,9 @@
             <h2 class="tablica_title">Proizvodi</h2>
             <div class="proizvod_navbar">
                 <button class="proizvod_nav-button" id="addEmployeeBtn" onclick="window.location.href = '/dodaj_proizvod_forma'">Dodaj proizvod</button>
-                <button class="proizvod_nav-button" id="editDeleteBtn" onclick="window.location.href = '/izbrisi_proizvod_forma'">Uredi/Obriši</button>
+                <button class="proizvod_nav-button" id="editDeleteBtn" onclick="window.location.href = '/izbrisi_proizvod_forma'">Obriši</button>
                 <div class="dropdown-container">
-                    <button class="proizvod_nav-button dropdown-toggle" id="sortBtn">Sortiraj</button>
+                    <button class="proizvod_nav-button dropdown-toggle" id="sortBtn" onclick="window.location.href = '/update_proizvod_forma'">Uredi</button>
                     <div class="dropdown">
                         <ul>
                             <li><a href="#" class="dropdown-item">Po imenu</a></li>
@@ -45,7 +45,7 @@
                         <td>{{ row[0] }}</td>
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
-                        <td>{{ row[3] }}</td>
+                        <td>{{ row[3] }}</td>                        
                     </tr>
                     {% else %}
                     <tr>

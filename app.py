@@ -267,6 +267,33 @@ def izbrisi_proizvod():
 
     return redirect(url_for('proizvod'))
 
+@app.route('/update_proizvod_forma', methods=['GET'])
+def update_proizvod_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM proizvod;')
+    proizvod = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/update_proizvod.html', proizvod=proizvod)
+
+@app.route('/azuriraj_proizvod', methods=['POST'])
+def azuriraj_proizvod():
+    id_proizvod = request.form['id_proizvod']
+    id_berba = request.form['id_berba']
+    cijena = request.form['cijena']
+    volumen = request.form['volumen']
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+            UPDATE proizvod
+            SET id_berba = %s, cijena = %s, volumen = %s
+            WHERE id = %s
+        """, (id_berba, cijena, volumen, id_proizvod))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('proizvod'))  
+
 
 @app.route('/punjenje', methods=['GET'])
 def punjenje():
