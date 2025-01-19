@@ -340,6 +340,49 @@ def azuriraj_proizvod():
 
     return redirect(url_for('proizvod'))  
 
+@app.route('/dodaj_vino_forma', methods=['GET'])
+def dodaj_vino_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM vino;')
+    vino = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/dodaj_vino.html', vino=vino)
+
+@app.route('/dodaj_vino', methods=['POST'])
+def dodaj_vino():
+    naziv = request.form['naziv']
+    vrsta = request.form['vrsta']
+    sorta = request.form['sorta']
+
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO vino (naziv, vrsta, sorta) VALUES(%s, %s, %s)",
+            (naziv, vrsta, sorta))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('vino'))
+
+@app.route('/obrisi_vino_forma', methods=['GET'])
+def obrisi_vino_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM vino;')
+    vino = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/obrisi_vino.html', vino=vino)
+
+@app.route('/izbrisi_vino', methods=['POST'])
+def izbrisi_vino():
+    id_proizvod = request.form['id_proizvod']
+
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM vino WHERE id = %s", (id_proizvod,))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('vino'))
+
 
 @app.route('/punjenje', methods=['GET'])
 def punjenje():
