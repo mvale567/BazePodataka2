@@ -666,3 +666,7 @@ button {
 button:hover {
   background-color: #0077cc;
 }
+
+.nema {
+  display: none;
+}
