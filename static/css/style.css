@@ -232,7 +232,7 @@ form {
     background-color: white;
     z-index: 50;
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 10px;
     padding: 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
