@@ -2958,7 +2958,7 @@ DELIMITER ;
 
 
 -- -----------------------------------------------------MARKO---------------------------------------------------------------------------------
--- dodavanje tablice uloge
+-- Dodavanje tablice uloge
 CREATE TABLE uloge (
     uloga_id INT AUTO_INCREMENT PRIMARY KEY,
     naziv VARCHAR(50) NOT NULL
@@ -2974,17 +2974,13 @@ VALUES ('admin'),
 
 -- SELECT * FROM uloge;
 
--- -proširivanje tablice zaposlenik i dodavanje privilegija za prijavu
-/*ALTER TABLE zaposlenik
-DROP COLUMN uloga; */
-
+-- Proširivanje tablice zaposlenik i dodavanje privilegija za prijavu
 ALTER TABLE zaposlenik
 ADD COLUMN uloga_id INT NOT NULL DEFAULT 4,  -- automatski stavlja ulogu zaposlenika na korisnika na kojem nije definiran
 ADD COLUMN lozinka VARCHAR(255) NOT NULL DEFAULT '212mj!#$#!',
 ADD CONSTRAINT fk_uloga FOREIGN KEY (uloga_id) REFERENCES uloge(uloga_id);  
 
-
--- dodavanje uloge i lozinke korisniku
+-- Dodavanje uloge i lozinke korisniku
 UPDATE zaposlenik
 SET 
     uloga_id = 1,
@@ -2995,17 +2991,13 @@ SELECT *
 FROM zaposlenik
 WHERE uloga_id = '1';
 
-
--- dodavanje tablice uloga_pristupa, definira kojim akcijama korisnik ima pristup
+-- Dodavanje tablice uloga_pristupa, definira kojim akcijama korisnik ima pristup
 CREATE TABLE uloge_pristupa (
     uloge_pristupa_id INT AUTO_INCREMENT PRIMARY KEY,
     uloga_id INT,
     akcija VARCHAR(100) NOT NULL,
     FOREIGN KEY (uloga_id) REFERENCES uloge(uloga_id) 
 );
-
-/*DELETE FROM uloge_pristupa
-WHERE uloge_pristupa_id > 0;*/ -- brisanje tablice radi pogresnog unosa, ali obavezno koristenje WHERE, zbog ukljucenog safe moda u sqlu
 
 INSERT INTO uloge_pristupa (uloga_id, akcija)
 VALUES 
@@ -3016,14 +3008,9 @@ VALUES
 (2, 'ne može brisati korisnike'),
 (4, 'nema nikakv pristup');
 
--- SELECT * FROM uloge_pristupa;
+SELECT * FROM uloge_pristupa;
 
-
-
-
-
--- dohvaćanje naziva uloge kojuu zaposlenik ima---
--- Brisanje postojeće funkcije ako postoji
+-- Dohvaćanje naziva uloge koju zaposlenik ima
 DROP FUNCTION IF EXISTS provjera_prava_korisnika;
 
 DELIMITER //
@@ -3047,12 +3034,10 @@ END;
 DELIMITER ;
 
 -- Testiranje funkcije
--- SELECT provjera_prava_korisnika(7);
+SELECT provjera_prava_korisnika(7);
 
-
-
+-- Funkcija za broj admin korisnika
 DROP FUNCTION IF EXISTS broj_admin_korisnika;
--- -funkcija s kojom dohvatimo koliko ima admina, koji imaju pristup svim podacima
 DELIMITER //
 CREATE FUNCTION broj_admin_korisnika()
 RETURNS INT
@@ -3068,14 +3053,9 @@ BEGIN
 END;
 //
 DELIMITER ;
+SELECT broj_admin_korisnika(); 
 
--- SELECT broj_admin_korisnika(); 
-
-
-
-
-
---  Ažuriranje uloge zaposlenika
+-- Ažuriranje uloge zaposlenika
 DELIMITER //
 CREATE PROCEDURE azuriraj_ulogu_zaposlenika (
     IN p_id INT,
@@ -3093,31 +3073,27 @@ BEGIN
 END;
 //
 DELIMITER ;
+CALL azuriraj_ulogu_zaposlenika(7, 1);  -- postavljamo zaposlenika s id=7 kao admina, preko tablice uloga id=1
 
--- CALL azuriraj_ulogu_zaposlenika(7, 1);  -- postavljamo zaposlenika s id=7 kao admina, preko tablice uloga id=1
-
-
--- DROP VIEW IF EXISTS pogled_administratori;
--- pogled koji pokazuje sve zaposlenike koji imaju prava admina
+-- Pogled koji pokazuje sve zaposlenike koji imaju prava admina
+DROP VIEW IF EXISTS pogled_administratori;
 CREATE VIEW pogled_administratori AS
 SELECT zaposlenik.id, zaposlenik.ime, zaposlenik.prezime, uloge.naziv AS uloga
 FROM zaposlenik
 JOIN uloge ON zaposlenik.uloga_id = uloge.uloga_id
 WHERE uloge.naziv = 'admin';
 
--- SELECT * FROM pogled_administratori;
+SELECT * FROM pogled_administratori;
 
-
--- pogleda koji su sve zaposlenici neaktivni
+-- Pogled koji pokazuje sve zaposlenike neaktivne
+DROP VIEW IF EXISTS pogled_neaktivni_korisnici;
 CREATE VIEW pogled_neaktivni_korisnici AS
 SELECT zaposlenik.id, zaposlenik.ime, zaposlenik.prezime, zaposlenik.status_zaposlenika
 FROM zaposlenik
 WHERE zaposlenik.status_zaposlenika = 'neaktivan';
 SELECT * FROM pogled_neaktivni_korisnici;
 
-
-
--- azuriranje statusa zaposlenika aktivan i neaktivan
+-- Ažuriranje statusa zaposlenika aktivan i neaktivan
 DELIMITER //
 CREATE PROCEDURE azuriraj_status_zaposlenika (
     IN p_id INT,
@@ -3136,101 +3112,6 @@ END;
 DELIMITER ;
 CALL azuriraj_status_zaposlenika(7, 'aktivan');
 
-
-
-
--- --------------------------------------------------
-DROP FUNCTION IF EXISTS broj_admin_korisnika;
--- 2. Funkcija za broj admina
-DELIMITER //
-CREATE FUNCTION broj_admin_korisnika()
-RETURNS INT
-DETERMINISTIC
-BEGIN
-    DECLARE broj_admina INT;
-    
-    -- Dohvat broja zaposlenika koji imaju ulogu 'admin'
-    SELECT COUNT(*) INTO broj_admina
-    FROM zaposlenik
-    WHERE zaposlenik.uloga_id = 1;  -- 1 je ID za admina
-
-    RETURN broj_admina;
-END;
-//
-DELIMITER ;
-
--- Testiranje funkcije
--- SELECT broj_admin_korisnika(); 
-
-
-
-
-
--- 3. Ažuriranje uloge zaposlenika
-DELIMITER //
-CREATE PROCEDURE azuriraj_ulogu_zaposlenika (
-    IN p_id INT,
-    IN p_uloga_id INT  -- Uloga se sada ažurira putem uloga_id (ID uloge)
-)
-BEGIN
-    IF EXISTS (SELECT 1 FROM zaposlenik WHERE id = p_id) 
-    THEN
-        UPDATE zaposlenik
-        SET uloga_id = p_uloga_id
-        WHERE id = p_id;
-    ELSE
-        SELECT 'Zaposlenik s ovim ID-om ne postoji!' AS poruka;
-    END IF;
-END;
-//
-DELIMITER ;
-
--- Testiranje procedure
--- CALL azuriraj_ulogu_zaposlenika(7, 1);  -- Postavlja zaposlenika s ID 7 kao admina
-
-
-
--- 4. Pogled za administratore
-CREATE VIEW pogled_administratori AS
-SELECT zaposlenik.id, zaposlenik.ime, zaposlenik.prezime, uloge.naziv AS uloga
-FROM zaposlenik
-JOIN uloge ON zaposlenik.uloga_id = uloge.uloga_id
-WHERE uloge.naziv = 'admin';
-
--- SELECT * FROM pogled_administratori;
-
-
-
--- 5. Pogled za neaktivne korisnike
-CREATE VIEW pogled_neaktivni_korisnici AS
-SELECT zaposlenik.id, zaposlenik.ime, zaposlenik.prezime, zaposlenik.status_zaposlenika
-FROM zaposlenik
-WHERE zaposlenik.status_zaposlenika = 'neaktivan';
-
--- SELECT * FROM pogled_neaktivni_korisnici;
-
-
-
--- 6. Ažuriranje statusa zaposlenika (aktivan / neaktivan)
-DELIMITER //
-CREATE PROCEDURE azuriraj_status_zaposlenika (
-    IN p_id INT,
-    IN p_status ENUM('aktivan', 'neaktivan')
-)
-BEGIN
-    IF EXISTS (SELECT 1 FROM zaposlenik WHERE id = p_id) THEN
-        UPDATE zaposlenik
-        SET status_zaposlenika = p_status
-        WHERE id = p_id;
-    ELSE
-        SELECT 'Zaposlenik s ovim ID-om ne postoji!' AS poruka;
-    END IF;
-END;
-//
-DELIMITER ;
-CALL azuriraj_status_zaposlenika(7, 'aktivan');  -- Postavlja zaposlenika s ID 7 kao aktivnog
-
-
 -- Trigger za automatsko postavljanje statusa na 'aktivan' prilikom unosa novog zaposlenika
 DELIMITER //
 CREATE TRIGGER postavi_status_na_aktivan
@@ -3244,10 +3125,8 @@ END;
 //
 DELIMITER ;
 
-
--- Procedura koja vraca popis dopustenja koje ima zaposlenik po id
+-- Procedura koja vraća popis dopuštenja koje ima zaposlenik po id
 DELIMITER //
-
 CREATE PROCEDURE prikazi_prava_korisnika(
     IN p_id_zaposlenik INT
 )
@@ -3260,18 +3139,19 @@ BEGIN
     WHERE zaposlenik.id = p_id_zaposlenik
     LIMIT 1;
 
-        SELECT uloge.naziv AS uloga, uloge_pristupa.akcija
-        FROM uloge
-        JOIN uloge_pristupa ON uloge.uloga_id = uloge_pristupa.uloga_id
-        WHERE uloge.naziv = uloga_naziv;
+    SELECT uloge.naziv AS uloga, uloge_pristupa.akcija
+    FROM uloge
+    JOIN uloge_pristupa ON uloge.uloga_id = uloge_pristupa.uloga_id
+    WHERE uloge.naziv = uloga_naziv;
 
 END;
 //
 DELIMITER ;
 
--- CALL prikazi_prava_korisnika(7);
+CALL prikazi_prava_korisnika(7);
 
--- SELECT * FROM uloge;
+SELECT * FROM uloge;
+
 
 CREATE VIEW pogled_transakcija_skladista AS
 SELECT 
@@ -3311,3 +3191,40 @@ GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
 
 
 
+GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
+
+CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin123';
+GRANT ALL PRIVILEGES ON vinarija.* TO 'admin'@'localhost';
+
+
+
+-- -------------------------------------------------------------------------------------------------------------------------------Marko
+CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin';
+GRANT ALL PRIVILEGES ON vinarija.* TO 'admin'@'localhost';
+
+
+
+CREATE ROLE 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.berba TO 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.dobavljac TO 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.plan_prizvodnje TO 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.prijevoznik TO 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.proizvod TO 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_vino TO 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.stanje_skladista_vina TO 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.transport TO 'manager_prodaje_role';
+
+DROP USER 'manager_prodaje'@'localhost';
+
+CREATE USER 'manager_prodaje'@'localhost' IDENTIFIED BY 'manager_prodaje';
+
+GRANT 'manager_prodaje_role' TO 'manager_prodaje'@'localhost';
+SET DEFAULT ROLE 'manager_prodaje_role' TO 'manager_prodaje'@'localhost';
+
+-- SHOW GRANTS FOR 'manager_prodaje'@'localhost';
+-- SHOW GRANTS FOR 'manager_prodaje_role';
+-- SHOW GRANTS FOR 'admin'@'localhost';
+
+SELECT User, Host FROM mysql.user;
+-- --------------------------------------------------------------------------------------------------------------------------
