@@ -29,6 +29,10 @@
             <a href="{{ url_for('prijevoznik') }}" target="outer-content-frame" class="nav-button"><i
                 class="fas fa-users"></i> Prijevoznik</a>
           </li>
+          <li>
+            <a href="{{ url_for('dobavljac') }}" target="outer-content-frame" class="nav-button"><i
+                class="fas fa-users"></i> Dobavljac</a>
+          </li>
           <li><a href="{{ url_for('vino') }}" target="outer-content-frame" class="nav-button"><i
                 class="fas fa-wine-glass"></i> Vino</a></li>
           <li>
@@ -40,21 +44,6 @@
             <a href="{{ url_for('proizvod') }}" target="outer-content-frame" class="nav-button"><i
                 class="fas fa-wine-glass"></i> Proizvodi</a>
           </li>
-          <li><a href="{{ url_for('repromaterijal') }}" target="outer-content-frame" class="nav-button"><i
-                class="fas fa-box"></i>Repromaterijal</a></li>
-          <li>
-            <a href="{{ url_for('repromaterijal_proizvod') }}" target="outer-content-frame" class="nav-button"><i
-                class="fas fa-box"></i> Repromaterijal po proizvodu</a>
-          </li>
-          <li>
-            <a href="{{ url_for('punjenje') }}" target="outer-content-frame" class="nav-button"><i
-                class="fas fa-cogs"></i> Punjenje proizvoda
-            </a>
-          </li>
-          <li>
-            <a href="{{ url_for('dobavljac') }}" target="outer-content-frame" class="nav-button"><i
-                class="fas fa-users"></i> Dobavljac</a>
-          </li>
           <li>
             <a href="#" class="nav-button gumb" id="zahtjeviBtn"><i class="fas fa-tasks"></i> Zahtjevi
               <i class="fas fa-chevron-down dropdown-icon"></i></a>
@@ -65,7 +54,7 @@
               </li>
               <li>
                 <a href="{{ url_for('stavka_narudzbe') }}" target="outer-content-frame" class="nav-button"><i
-                    class="fas fa-file-alt"></i> Stavke narudžbi
+                    class="fas fa-shopping-cart"></i> Stavke narudžbi
                 </a>
               </li>
               <li>
@@ -73,6 +62,21 @@
                     class="fas fa-file-alt"></i> Zahtjev za nabavu
                 </a>
               </li>
+            </ul>
+          </li>
+          <li>
+            <a href="#" class="nav-button gumb" id="racunovodstvoBtn"><i class="fas fa-file-invoice"></i> Računovodstvo
+              <i class="fas fa-chevron-down dropdown-icon"></i></a>
+            <ul class="dropdown">
+                <li>
+                    <a href="{{ url_for('racun') }}" target="outer-content-frame" class="nav-button"><i
+                        class="fas fa-receipt"></i> Računi</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('kvartalni_pregled_prodaje') }}" target="outer-content-frame" class="nav-button"><i
+                        class="fas fa-file-invoice-dollar"></i> Prodaja po kvartalu
+                    </a>
+                </li>
             </ul>
           </li>
           <li>
@@ -99,22 +103,24 @@
               </li>
             </ul>
           </li>
+          <li><a href="{{ url_for('repromaterijal') }}" target="outer-content-frame" class="nav-button"><i
+                class="fas fa-box"></i>Repromaterijal</a></li>
+          <li>
+            <a href="{{ url_for('repromaterijal_proizvod') }}" target="outer-content-frame" class="nav-button"><i
+                class="fas fa-box"></i> Repromaterijal po proizvodu</a>
+          </li>
+          <li>
+            <a href="{{ url_for('punjenje') }}" target="outer-content-frame" class="nav-button"><i
+                class="fas fa-cogs"></i> Punjenje proizvoda
+            </a>
+          </li>
           <li>
             <a href="{{ url_for('plan_proizvodnje') }}" target="outer-content-frame" class="nav-button"><i
-                class="fas fa-warehouse"></i> Plan proizvonje</a>
+                class="fas fa-project-diagram"></i> Plan proizvodnje</a>
           </li>
           <li>
             <a href="{{ url_for('transport') }}" target="outer-content-frame" class="nav-button"><i
-                class="fas fa-warehouse"></i> Transport</a>
-          </li>
-          <li>
-            <a href="{{ url_for('racun') }}" target="outer-content-frame" class="nav-button"><i
-                class="fas fa-warehouse"></i> Računi</a>
-          </li>
-          <li>
-            <a href="{{ url_for('kvartalni_pregled_prodaje') }}" target="outer-content-frame" class="nav-button"><i
-                class="fas fa-file-invoice-dollar"></i> Prodaja po kvartalu
-            </a>
+                class="fas fa-truck"></i> Transport</a>
           </li>
         </ul>
       </nav>

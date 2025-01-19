@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Pozivanje funkcije za oba dropdowna
   aktiviraj_dropdown("zahtjeviBtn"); // Za zahtjeve
   aktiviraj_dropdown("skladistaBtn"); // Za skladišta
+  aktiviraj_dropdown("racunovodstvoBtn"); // Za racunovodstvo
 });
 
 // zaposlenik sortiranje, dropdown
