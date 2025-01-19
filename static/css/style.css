@@ -489,9 +489,9 @@ td[colspan="8"] {
 
 
 .tablica_title {
-    text-align: center; /* Centriraj naslov */
-    font-size: 3rem; /* Veći font za bolju vidljivost */
-    color: #00aaff; /* Plava boja koja ide uz gumbe */
+    text-align: center;
+    font-size: 3rem;
+    color: #00aaff;
     font-weight: bold;
 }
 

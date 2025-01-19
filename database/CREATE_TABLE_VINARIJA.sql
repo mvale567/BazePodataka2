@@ -1334,7 +1334,7 @@ UNION ALL
 
 
 INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik)
-SELECT id_repromaterijal, kolicina, DATE_SUB(datum, INTERVAL 14 DAY) AS datum_zahtjeva, 'odobreno' AS status_nabave,
+SELECT id_repromaterijal, kolicina, DATE_SUB(datum, INTERVAL 14 DAY) AS datum_zahtjeva, 'dostavljeno' AS status_nabave,
 CASE 
 	WHEN id % 3 = 1 THEN 4
 	WHEN id % 3 = 2 THEN 10
@@ -1343,36 +1343,32 @@ END AS id_zaposlenik
 	FROM skladiste_repromaterijal
 	WHERE tip_transakcije = 'ulaz';
 
-SELECT * FROM racun;
 INSERT INTO racun (id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
 SELECT 16 AS id_zaposlenik, zzn.id AS id_zahtjev_za_narudzbu, DATE_ADD(zzn.datum_zahtjeva, INTERVAL 3 DAY) AS datum_racuna
 	FROM zahtjev_za_narudzbu zzn
 	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
-SELECT * FROM zahtjev_za_narudzbu;
 
 
 CREATE TABLE kvartalni_pregled_prodaje (
 	id_proizvod INTEGER,
     kolicina INTEGER NOT NULL,
     ukupni_iznos DECIMAL(10,2) NOT NULL,
-    pocetni_datum DATE,
-    zavrsni_datum DATE,
-    PRIMARY KEY (id_proizvod, pocetni_datum, zavrsni_datum),
+	kvartal VARCHAR(20) NOT NULL,
+    PRIMARY KEY (id_proizvod, kvartal),
     FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
 );
 
 
 DELIMITER //
-CREATE PROCEDURE azuriraj_prodane_proizvode(IN p_id_proizvod INTEGER, IN p_kolicina INTEGER, IN p_ukupni_iznos DECIMAL(10,2), p_pocetni_datum DATE, p_zavrsni_datum DATE)
+CREATE PROCEDURE azuriraj_prodane_proizvode(IN p_id_proizvod INTEGER, IN p_kolicina INTEGER, IN p_ukupni_iznos DECIMAL(10,2), p_kvartal VARCHAR(20))
 BEGIN
-	IF NOT EXISTS (SELECT 1 FROM kvartalni_pregled_prodaje WHERE id_proizvod = p_id_proizvod AND pocetni_datum = p_pocetni_datum AND zavrsni_datum = p_zavrsni_datum) THEN
-		INSERT INTO kvartalni_pregled_prodaje VALUES (p_id_proizvod, p_kolicina, p_ukupni_iznos, p_pocetni_datum, p_zavrsni_datum);
+	IF NOT EXISTS (SELECT 1 FROM kvartalni_pregled_prodaje WHERE id_proizvod = p_id_proizvod AND kvartal = p_kvartal) THEN
+		INSERT INTO kvartalni_pregled_prodaje VALUES (p_id_proizvod, p_kolicina, p_ukupni_iznos, p_kvartal);
 	ELSE
 		UPDATE kvartalni_pregled_prodaje 
 			SET kolicina = kolicina + p_kolicina, ukupni_iznos = ukupni_iznos + p_ukupni_iznos
         WHERE id_proizvod = p_id_proizvod
-        AND pocetni_datum = p_pocetni_datum 
-        AND zavrsni_datum = p_zavrsni_datum;
+			AND kvartal = p_kvartal;
     END IF;
 END //
 DELIMITER ;
@@ -1381,8 +1377,9 @@ DELIMITER ;
 DELIMITER //
 CREATE PROCEDURE azuriraj_prodaju(IN p_pocetni_datum DATE, IN p_zavrsni_datum DATE)
 BEGIN
-	DECLARE l_id_proizvod, l_kolicina INTEGER;
-    DECLARE l_ukupni_iznos DECIMAL(10,2);
+	DECLARE var_id_proizvod, var_kolicina INTEGER;
+    DECLARE var_ukupni_iznos DECIMAL(10,2);
+    DECLARE var_kvartal VARCHAR(20);
 	DECLARE handler_broj INTEGER DEFAULT 0;
     
     DECLARE cur CURSOR FOR
@@ -1407,19 +1404,34 @@ BEGIN
 	END IF;
     
     IF p_pocetni_datum > p_zavrsni_datum THEN
-		SIGNAL SQLSTATE '45010' SET MESSAGE_TEXT = 'Početni datum ne može biti kasniji od završnog datuma!';
+		SIGNAL SQLSTATE '45010' SET MESSAGE_TEXT = 'Početni datum ne može biti nakon završnog datuma!';
+	END IF;
+    
+    SELECT 
+		CASE 
+            WHEN p_zavrsni_datum > p_pocetni_datum + INTERVAL 3 MONTH THEN 'Krivi unos!'
+			WHEN MONTH(p_pocetni_datum) = 1 AND MONTH(p_zavrsni_datum) = 3 THEN CONCAT('Q1 ', YEAR(p_pocetni_datum))
+			WHEN MONTH(p_pocetni_datum) = 4 AND MONTH(p_zavrsni_datum) = 6 THEN CONCAT('Q2 ', YEAR(p_pocetni_datum))
+			WHEN MONTH(p_pocetni_datum) = 7 AND MONTH(p_zavrsni_datum) = 9 THEN CONCAT('Q3 ', YEAR(p_pocetni_datum))
+			WHEN MONTH(p_pocetni_datum) = 10 AND MONTH(p_zavrsni_datum) = 12 THEN CONCAT('Q4 ', YEAR(p_pocetni_datum))
+            ELSE 'Krivi unos!'
+		END
+	INTO var_kvartal;
+    
+    IF var_kvartal = 'Krivi unos!' THEN
+		SIGNAL SQLSTATE '45013' SET MESSAGE_TEXT = 'Uneseni datumi ne odgovaraju niti jednom kvartalu!';
 	END IF;
     
     OPEN cur;
     
     petlja: LOOP
-		FETCH cur INTO l_id_proizvod, l_kolicina, l_ukupni_iznos;
+		FETCH cur INTO var_id_proizvod, var_kolicina, var_ukupni_iznos;
         
         IF handler_broj = 1 THEN
 			LEAVE petlja;
         END IF;
-    
-		CALL azuriraj_prodane_proizvode(l_id_proizvod, l_kolicina, l_ukupni_iznos, p_pocetni_datum, p_zavrsni_datum);
+		
+		CALL azuriraj_prodane_proizvode(var_id_proizvod, var_kolicina, var_ukupni_iznos, var_kvartal);
         
     END LOOP petlja;
     
@@ -1480,6 +1492,7 @@ CALL izracunaj_kolicinu_transporta(@novi_transport);
 COMMIT;
 
 
+
 DELIMITER //
 CREATE TRIGGER au_zahtjev_za_narudzbu_otkazana
 	AFTER UPDATE ON zahtjev_za_narudzbu
@@ -1503,12 +1516,19 @@ CREATE TRIGGER bu_transport_datum_dolaska
 	BEFORE UPDATE ON transport
     FOR EACH ROW
 BEGIN
-	IF new.datum_dolaska IS NOT NULL THEN
-		SET new.status_transporta = 'Obavljen';
+	IF NEW.datum_dolaska < NEW.datum_polaska THEN
+		SIGNAL SQLSTATE '45012' SET MESSAGE_TEXT = 'Datum dolaska ne može biti prije datuma polaska!';
+    END IF;
+	IF NEW.datum_dolaska IS NOT NULL THEN
+		SET NEW.status_transporta = 'Obavljen';
 	END IF;
 END //
 DELIMITER ;
 
+/* provjera
+-- SELECT * FROM transport;
+-- UPDATE transport SET datum_dolaska = '2022-05-20' WHERE id = 20;
+*/
 
 DELIMITER //
 CREATE TRIGGER au_transport_datum_dolaska
@@ -1524,6 +1544,8 @@ END //
 DELIMITER ;
 
 
+/* provjera
+
 SELECT * FROM transport;
 SELECT * FROM zahtjev_za_narudzbu;
 
@@ -1531,20 +1553,399 @@ UPDATE transport
 	SET datum_dolaska = CURDATE()
     WHERE id = 17;
 
+*/
 
 
 
 
--- pogled za aplikaciju
+-- Funkcija koja racuna zbroj iznosa svih zavrsenih narudzbi koje je neki zaposlenik obradio
 
-CREATE VIEW repromaterijal_po_proizvodu AS
-SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, r.opis AS repromaterijal
-	FROM vino v
-    JOIN berba b ON v.id = b.id_vino
-    JOIN proizvod p ON p.id_berba = b.id
-	JOIN repromaterijal_proizvod rp ON rp.id_proizvod = p.id
-    JOIN repromaterijal r ON rp.id_repromaterijal = r.id;
+DELIMITER //
+CREATE FUNCTION ukupan_iznos_zaposlenik(p_id_zaposlenik INTEGER) RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+BEGIN
+	DECLARE var_iznos DECIMAL(10, 2);
     
+    SELECT SUM(ukupni_iznos) INTO var_iznos
+		FROM zahtjev_za_narudzbu
+		WHERE status_narudzbe = 'Završena'
+			AND id_zaposlenik = p_id_zaposlenik;
+    
+    RETURN var_iznos;
+END //
+DELIMITER ;
+
+-- SELECT ukupan_iznos_zaposlenik(5);
+
+
+
+-- Upit – koji zaposlenik prodaje je obradio narudzbe s najvecim sveukupnim iznosom 
+
+SELECT z.id, z.ime, z.prezime, o.naziv AS odjel, ukupan_iznos_zaposlenik(z.id) AS zbroj_iznosa_obradenih_narudzbi
+	FROM zaposlenik z
+    JOIN odjel o ON o.id = z.id_odjel
+    WHERE o.naziv = 'Prodaja'
+    ORDER BY ukupan_iznos_zaposlenik(z.id) DESC
+    LIMIT 1;
+
+
+
+-- Funkcija koja racuna ukupnu kolicinu litara vina u određenoj godini prema tome koliko litara vina iz berbi iz te godine je uslo u skladiste vina
+
+DELIMITER //
+CREATE FUNCTION kolicina_vina_godina(p_godina INTEGER) RETURNS VARCHAR(20)
+DETERMINISTIC
+BEGIN
+	DECLARE var_kolicina_vina VARCHAR(20);
+    
+	SELECT CONCAT(COALESCE(SUM(sv.kolicina),0), ' L') INTO var_kolicina_vina
+		FROM skladiste_vino sv
+		JOIN berba b ON b.id = sv.id_berba
+		WHERE tip_transakcije = 'ulaz'
+			AND b.godina_berbe = p_godina;
+            
+	RETURN var_kolicina_vina;
+END //
+DELIMITER ;
+
+-- SELECT kolicina_vina_godina(2023);
+
+
+
+-- Pogled – prikaz podataka o vinu uz količinu litara vina po berbi za berbe vina s natprosjecnom berbom
+
+CREATE VIEW vino_berba AS
+	SELECT v.naziv, v.vrsta, v.sorta, b.godina_berbe, b.postotak_alkohola, SUM(sv.kolicina) AS ukupna_kolicina
+		FROM vino v
+        JOIN berba b ON v.id = b.id_vino
+        JOIN skladiste_vino sv ON b.id = sv.id_berba
+        WHERE sv.tip_transakcije = 'ulaz'
+        GROUP BY b.id
+        HAVING ukupna_kolicina > (SELECT AVG(kolicina) FROM skladiste_vino WHERE tip_transakcije = 'ulaz');
+
+-- SELECT * FROM vino_berba;
+
+
+
+-- Pogled – prikaz svih serija proizvoda punjenih u 2024. godini i njihovih kolicina
+
+CREATE VIEW serije_proizvoda_2024 AS
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, pu.oznaka_serije, pu.kolicina
+	FROM vino v
+	JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON b.id = p.id_berba
+    JOIN punjenje pu ON p.id = pu.id_proizvod
+    WHERE YEAR(pocetak_punjenja) = 2024;
+
+-- SELECT * FROM serije_proizvoda_2024;
+
+
+
+-- Pogled - detaljan prikaz svih računa i njihovih stavki
+
+CREATE VIEW racuni_stavke AS
+SELECT r.id AS id_racun, k.naziv AS kupac, r.datum_racuna, CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, sn.kolicina, sn.iznos_stavke, CONCAT(z.ime, ' ', z.prezime) AS zaposlenik
+	FROM vino v
+	JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON b.id = p.id_berba
+    JOIN stavka_narudzbe sn ON p.id = sn.id_proizvod
+	JOIN zahtjev_za_narudzbu zzn ON zzn.id = sn.id_zahtjev_za_narudzbu
+    JOIN kupac k ON k.id = zzn.id_kupac
+    JOIN racun r ON zzn.id = r.id_zahtjev_za_narudzbu
+    JOIN zaposlenik z ON z.id = r.id_zaposlenik
+    ORDER BY r.id;
+
+-- SELECT * FROM racuni_stavke;
+
+
+
+
+-- Upit – 5 najvise prodavanih proizvoda (gledajući narudzbe za koje je izdan racun)
+
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, SUM(sn.kolicina) AS ukupno_prodano 
+	FROM vino v
+	JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON b.id = p.id_berba
+    JOIN stavka_narudzbe sn ON p.id = sn.id_proizvod
+    JOIN zahtjev_za_narudzbu zzn ON zzn.id = sn.id_zahtjev_za_narudzbu
+    WHERE zzn.id IN (SELECT id_zahtjev_za_narudzbu FROM racun)
+    GROUP BY p.id
+    ORDER BY ukupno_prodano DESC
+    LIMIT 5;
+
+
+
+-- Funkcija – postotak proizvoda u ukupnoj prodaji (prema izdanim računima)
+
+DELIMITER //
+CREATE FUNCTION postotak_proizvoda(p_id_proizvod INTEGER) RETURNS VARCHAR(100)
+DETERMINISTIC
+BEGIN
+	DECLARE var_ukupno_prodano, var_prodano_proizvod INTEGER;
+    
+    SELECT SUM(sn.kolicina) AS ukupno_prodano INTO var_ukupno_prodano
+		FROM stavka_narudzbe sn 
+		JOIN zahtjev_za_narudzbu zzn ON zzn.id = sn.id_zahtjev_za_narudzbu
+		WHERE zzn.id IN (SELECT id_zahtjev_za_narudzbu FROM racun);
+        
+	SELECT SUM(sn.kolicina) AS ukupno_prodano INTO var_prodano_proizvod
+		FROM stavka_narudzbe sn 
+		JOIN zahtjev_za_narudzbu zzn ON zzn.id = sn.id_zahtjev_za_narudzbu
+		WHERE zzn.id IN (SELECT id_zahtjev_za_narudzbu FROM racun)
+			AND id_proizvod = p_id_proizvod;
+            
+	RETURN CONCAT('Postotak prodaje proizvoda id ', p_id_proizvod, ' u ukupnoj prodaji je ', ROUND(((var_prodano_proizvod/var_ukupno_prodano)*100), 2), '%');
+END //
+DELIMITER ;
+
+-- SELECT postotak_proizvoda(11);
+
+
+-- Pogled - prikaz proizvoda, njihove ukupne prodane količine, zarade i postotka u prodaji koristeći funkciju
+
+CREATE VIEW proizvod_prodaja AS
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, SUM(sn.kolicina) AS ukupno_prodano, p.cijena * SUM(sn.kolicina) AS ukupna_zarada, postotak_proizvoda(p.id) AS postotak_prodaje
+	FROM vino v
+	JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON b.id = p.id_berba
+    JOIN stavka_narudzbe sn ON p.id = sn.id_proizvod
+    JOIN zahtjev_za_narudzbu zzn ON zzn.id = sn.id_zahtjev_za_narudzbu
+    WHERE zzn.id IN (SELECT id_zahtjev_za_narudzbu FROM racun)
+    GROUP BY p.id;
+
+-- SELECT * FROM proizvod_prodaja;
+
+
+-- Upit - prikazi sve proizvode koji su prodani u ukupnoj kolicini vecoj od 1000
+
+SELECT proizvod, ukupno_prodano
+	FROM proizvod_prodaja
+    WHERE ukupno_prodano > 1000
+    ORDER BY ukupno_prodano DESC;
+    
+
+
+DELIMITER //
+CREATE PROCEDURE analiziraj_narudzbe_po_mjesecu(IN p_mjesec INTEGER, IN p_godina INTEGER, OUT p_info_mjesec VARCHAR(200))
+BEGIN
+	DECLARE var_broj_narudzbi INTEGER;
+    DECLARE var_prosjecni_iznos, var_najmanji_iznos, var_najveci_iznos DECIMAL(10,2);
+    SELECT COUNT(id), ROUND(AVG(ukupni_iznos), 2), MIN(ukupni_iznos), MAX(ukupni_iznos) INTO var_broj_narudzbi, var_prosjecni_iznos, var_najmanji_iznos, var_najveci_iznos
+		FROM zahtjev_za_narudzbu
+        WHERE MONTH(datum_zahtjeva) = p_mjesec
+			AND YEAR(datum_zahtjeva) = p_godina
+		GROUP BY YEAR(datum_zahtjeva), MONTH(datum_zahtjeva);
+	
+    SET p_info_mjesec = CONCAT('U ', p_mjesec, '. mjesecu ', p_godina, '. godine je bilo ', var_broj_narudzbi, ' narudžbi. Najmanji iznos narudžbe je bio €', var_najmanji_iznos, ' a najveći €', var_najveci_iznos, '. Prosječan iznos narudžbe je iznosio €', var_prosjecni_iznos, '.');
+END //
+DELIMITER ;
+
+-- CALL analiziraj_narudzbe_po_mjesecu(11, 2024, @info);
+-- SELECT @info;
+
+
+
+-- Upit – koji proizvod je najvise proizveden u zadnjih godinu dana
+
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod
+	FROM vino v
+	JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON b.id = p.id_berba
+    WHERE p.id = (
+		SELECT id_proizvod
+		FROM punjenje
+		WHERE zavrsetak_punjenja >= CURDATE() - INTERVAL 1 YEAR
+		GROUP BY id_proizvod
+		ORDER BY SUM(kolicina) DESC
+		LIMIT 1
+	);
+
+
+-- Procedura – prikazi sve narudzbe koje sadrze neki proizvod
+
+
+DELIMITER //
+CREATE PROCEDURE prikazi_narudzbe_za_proizvod(IN p_id_proizvod INTEGER)
+BEGIN
+	DECLARE var_id, var_kolicina INTEGER;
+    DECLARE var_datum DATE;
+    DECLARE handler_broj INTEGER DEFAULT 0;
+    
+    DECLARE cur CURSOR FOR
+		SELECT zzn.id, zzn.datum_zahtjeva, sn.kolicina
+			FROM zahtjev_za_narudzbu zzn
+            JOIN stavka_narudzbe sn ON zzn.id = sn.id_zahtjev_za_narudzbu
+            WHERE sn.id_proizvod = p_id_proizvod;
+            
+	DECLARE CONTINUE HANDLER FOR NOT FOUND
+		SET handler_broj = 1;
+
+	CREATE TEMPORARY TABLE narudzbe_za_proizvod (
+		id_narudzba INTEGER,
+        datum_narudzbe DATE,
+		kolicina_proizvoda INTEGER
+    );
+    
+    OPEN cur;
+		
+	petlja: LOOP
+		FETCH cur INTO var_id, var_datum, var_kolicina;
+        
+        IF handler_broj = 1 THEN
+			LEAVE petlja;
+		END IF;
+		
+		INSERT INTO narudzbe_za_proizvod VALUES (var_id, var_datum, var_kolicina);
+    
+    END LOOP petlja;
+    
+    CLOSE cur;
+    
+    SELECT * FROM narudzbe_za_proizvod;
+    DROP TEMPORARY TABLE narudzbe_za_proizvod;
+END //
+DELIMITER ;
+
+-- CALL prikazi_narudzbe_za_proizvod(1);
+
+
+
+-- Funkcija – vraća koliko dugo je neki zaposlenik zaposlen u vinariji
+
+
+DELIMITER //
+CREATE FUNCTION radni_staz(p_id_zaposlenik INTEGER) RETURNS VARCHAR(100)
+DETERMINISTIC
+BEGIN
+	DECLARE var_broj_dana, var_godine, var_mjeseci, var_dani INTEGER;
+    
+    SELECT DATEDIFF(CURDATE(), datum_zaposlenja) INTO var_broj_dana
+		FROM zaposlenik
+        WHERE id = p_id_zaposlenik;
+	
+	SET var_godine = FLOOR(var_broj_dana/365);
+	SET var_mjeseci = FLOOR((var_broj_dana % 365)/30);
+	SET var_dani = (var_broj_dana % 365) % 30;
+        
+    RETURN CONCAT('Zaposlenik radi u vinariji ', var_godine, ' godinu, ', var_mjeseci, ' mjeseci i ', var_dani, ' dana.'); 
+END //
+DELIMITER ;
+
+-- SELECT radni_staz(1);
+
+
+-- Upit - prikaz zaposlenik s aktivnim statusom uz odjel i njihov radni staž 
+
+SELECT CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, o.naziv AS odjel, radni_staz(z.id) AS radni_staz
+	FROM zaposlenik z
+    JOIN odjel o ON o.id = z.id_odjel
+    WHERE status_zaposlenika = 'aktivan';
+
+
+
+-- Funkcija – vraća broj transporta s registracijskim tablicama nekog grada 
+
+SELECT * FROM transport;
+
+DELIMITER //
+CREATE FUNCTION tablice_grad(p_tablice CHAR(2)) RETURNS INTEGER
+DETERMINISTIC
+BEGIN
+	DECLARE var_broj_tablica INTEGER;
+
+	SELECT COUNT(*) INTO var_broj_tablica 
+		FROM transport
+		WHERE registracija LIKE CONCAT(p_tablice, '%');
+        
+	RETURN var_broj_tablica;
+END //
+DELIMITER ;
+
+-- SELECT tablice_grad('ZG');
+
+
+
+-- Pogled – sve narudzbe koje nisu poslane/zavrsene/otkazane, a od datuma zahtjeva je proslo vise od tjedan dana
+
+-- CREATE VIEW zaostale_narudzbe AS
+SELECT zzn.id, k.naziv AS kupac, CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, zzn.datum_zahtjeva, zzn.ukupni_iznos, zzn.status_narudzbe
+	FROM zahtjev_za_narudzbu zzn
+    JOIN kupac k ON k.id = zzn.id_kupac
+    JOIN zaposlenik z ON z.id = zzn.id_zaposlenik
+    WHERE status_narudzbe NOT IN ('Završena', 'Poslana', 'Otkazana')
+		AND DATEDIFF(CURDATE(), datum_zahtjeva) > 7;
+
+
+-- Funkcija – broj zaposlenih u nekom odjelu u zadnjih godinu dana
+
+DELIMITER //
+CREATE FUNCTION zaposleni_odjel(p_id_odjel INTEGER) RETURNS INTEGER
+DETERMINISTIC
+BEGIN
+	DECLARE var_broj_zaposlenih INTEGER;
+    
+    SELECT COUNT(*) INTO var_broj_zaposlenih
+		FROM zaposlenik
+        WHERE id_odjel = p_id_odjel
+			AND datum_zaposlenja > CURDATE() - INTERVAL 1 YEAR;
+    
+    RETURN var_broj_zaposlenih;
+END //	
+DELIMITER ;
+
+-- SELECT zaposleni_odjel(6);
+
+
+
+-- Upit - odjel(i) s najviše zaposlenih u zadnjih godinu dana
+
+SELECT id, naziv, zaposleni_odjel(id) AS zaposleni_unutar_godinu_dana
+	FROM odjel o
+    WHERE zaposleni_odjel(id) = (SELECT MAX(zaposleni_odjel(id)) FROM odjel);
+
+
+
+
+
+-- Funkcija – vraća broj kupaca i zaposlenika iz nekog mjesta
+
+DELIMITER //
+CREATE FUNCTION broj_mjesta(p_mjesto VARCHAR(20)) RETURNS INTEGER
+DETERMINISTIC
+BEGIN
+	DECLARE var_broj INTEGER;
+    
+    SELECT COUNT(*) INTO var_broj
+		FROM (
+			SELECT adresa FROM zaposlenik
+            UNION ALL
+            SELECT adresa FROM kupac
+		) AS zk
+        WHERE zk.adresa LIKE CONCAT('%', p_mjesto);
+        
+	RETURN var_broj;    
+END //
+DELIMITER ;
+
+-- SELECT broj_mjesta('Dubrovnik');
+
+
+-- Upit - prikazi sve kupce i broj njihovih racuna, pritom prikazati samo one kupce koji imaju barem dva racuna
+
+SELECT k.*, COUNT(*) AS broj_racuna
+	FROM kupac k
+	JOIN zahtjev_za_narudzbu zzn ON k.id = zzn.id_kupac
+	JOIN racun r ON zzn.id = r.id_zahtjev_za_narudzbu 
+	GROUP BY k.id
+	HAVING COUNT(*) > 1;
+
+
+
+
+
+
+-- procedure i pogledi za upotrebu u aplikaciji
+
 
 DELIMITER //
 CREATE PROCEDURE dodaj_novu_berbu (IN p_id_vino INTEGER, IN p_godina_berbe INTEGER, IN p_postotak_alkohola DECIMAL(5, 2))
@@ -1554,6 +1955,15 @@ BEGIN
 END //
 DELIMITER ;
 
+
+CREATE VIEW repromaterijal_po_proizvodu AS
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, r.opis AS repromaterijal
+	FROM vino v
+    JOIN berba b ON v.id = b.id_vino
+    JOIN proizvod p ON p.id_berba = b.id
+	JOIN repromaterijal_proizvod rp ON rp.id_proizvod = p.id
+    JOIN repromaterijal r ON rp.id_repromaterijal = r.id;
+    
 
 CREATE VIEW vino_skladiste AS 
 SELECT CONCAT(v.naziv,' ', b.godina_berbe) AS vino, ssv.kolicina
@@ -1577,12 +1987,11 @@ SELECT r.opis AS repromaterijal, ssr.kolicina
 
 
 CREATE VIEW kvartalna_prodaja AS
-SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, kpp.kolicina, kpp.ukupni_iznos, kpp.pocetni_datum, kpp.zavrsni_datum
+SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, kpp.kolicina, kpp.ukupni_iznos, kpp.kvartal
 	FROM vino v
     JOIN berba b ON v.id = b.id_vino
     JOIN proizvod p ON p.id_berba = b.id
     JOIN kvartalni_pregled_prodaje kpp ON p.id = kpp.id_proizvod;
-
 
 CREATE VIEW punjenje_pogled AS
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, pu.oznaka_serije, pu.pocetak_punjenja, pu.zavrsetak_punjenja, pu.kolicina 
@@ -1609,6 +2018,19 @@ SELECT sn.id, sn.id_zahtjev_za_narudzbu, CONCAT(v.naziv, ' ', b.godina_berbe, ' 
     JOIN vino v ON v.id = b.id_vino
     ORDER BY sn.id;
     
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1863,7 +2285,7 @@ SELECT *
 	FROM berba;
     
 -- trigger koji dodaje repromaterijal u skladiste_repromaterijal na temelju promijene statusa zahtjeva za nabavu u 'dostavljeno'
-DROP TRIGGER au_dodaj_dostavljeni_repromaterijal;
+
 DELIMITER //
 CREATE TRIGGER au_dodaj_dostavljeni_repromaterijal
 AFTER UPDATE ON zahtjev_za_nabavu
@@ -1875,12 +2297,15 @@ BEGIN
 END//
 DELIMITER ;
 
+
 SELECT * FROM zahtjev_za_nabavu;
 SELECT * FROM skladiste_repromaterijal;
 
+INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik) VALUES (1, 100, CURDATE(), 'odobreno', 10);
+
 UPDATE zahtjev_za_nabavu
 	SET status_nabave = 'dostavljeno'
-	WHERE id = 23;
+	WHERE id = 256;
 
 
 -- procedura koja omogućuje ažuriranje statusa narudžbe u tablici zahtjev_za_narudzbu

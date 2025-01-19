@@ -21,8 +21,7 @@
                         <th>Proizvod</th>
                         <th>Količina</th>
                         <th>Ukupni iznos</th>
-                        <th>Početni datum</th>
-                        <th>Završni datum</th>
+                        <th>Kvartal</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -32,11 +31,10 @@
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
                         <td>{{ row[3] }}</td>
-                        <td>{{ row[4] }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5">Nema podataka.</td>
+                        <td colspan="4">Nema podataka.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

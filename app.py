@@ -178,7 +178,7 @@ def dodaj_berbu():
     mysql.connection.commit()
     cur.close()
 
-    return redirect(url_for('show_berba'))
+    return redirect(url_for('berba'))
 
 @app.route('/dodaj_repromaterijal_forma', methods=['GET'])
 def dodaj_repromaterijal_forma():
