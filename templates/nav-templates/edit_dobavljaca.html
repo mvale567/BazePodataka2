@@ -19,31 +19,34 @@
                     <tr>
                         <th>ID</th>
                         <th>Naziv</th>
-                         <th>Adresa</th>
+                        
+                        <th>Adresa</th>
                         <th>Email</th>
                         <th>Telefon</th>
-                        
+                        <th>OIB</th>
+                    
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in dobavlac %}
+                    {% for row in dobavljac %}
                     <tr>
                         <td>{{ row[0] }}</td> <!-- ID -->
-                        <td>{{ row[1] }}</td> <!-- Naziv -->
-                        <td>{{ row[3] }}</td> <!-- Adresa -->
-                        <td>{{ row[2] }}</td> <!-- Email -->
-                        <td>{{ row[4] }}</td> <!-- Telefon -->
-                       
+                        <td>{{ row[2] }}</td> <!-- Ime -->
+                        <td>{{ row[3] }}</td> <!-- Prezime -->
+                        <td>{{ row[4] }}</td> <!-- Adresa -->
+                        <td>{{ row[5] }}</td> <!-- Email -->
+                    
+
                         <td>
                             <!-- Tipka za Uredi -->
-                            <a href="{{ url_for('edit_dobavljac_forma', id=row[0]) }}">
-                                <button class="btn-edit">Uredi</button>
+                            <a href="{{ url_for('edit_dobavljaca_forma', id=row[0]) }}">
+                                <button class="btn-edit dob-uredi">Uredi</button>
                             </a>
                         </td>
                         <td>
-                            <form class="form_btn-delete" action="{{ url_for('obrisi_dobavljac', id=row[0]) }}"
+                            <form class="form_btn-delete" action="{{ url_for('obrisi_dobavljaca', id=row[0]) }}"
                                 method="POST">
-                                <button type="submit" class="btn-delete">Obriši</button>
+                                <button type="submit" class="btn-delete dob-obrisi">Obriši</button>
                             </form>
                         </td>
                     </tr>

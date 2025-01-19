@@ -189,6 +189,62 @@ def dodaj_dobavljaca():
     cur.close()
 
     return redirect(url_for('dobavljac'))
+
+
+@app.route('/edit_dobavljaca', methods=['GET'])
+def edit_dobavljaca():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM dobavljac;')
+    dobavljac = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/edit_dobavljaca.html', dobavljac=dobavljac)
+
+
+@app.route('/obrisi_dobavljaca/<int:id>', methods=['POST'])
+def obrisi_dobavljaca(id):
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("DELETE FROM dobavljaca WHERE id = %s", [id])
+        mysql.connection.commit()
+        cur.close()
+
+        return redirect(url_for('edit_dobavljaca'))
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return redirect(url_for('edit_dobavljaca'))  
+
+@app.route('/edit_dobavljaca_forma/<int:id>', methods=['GET'])
+def edit_dobavljaca_forma(id):
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM dobavljac WHERE id = %s', [id])
+    dobavljac = cur.fetchone()
+    cur.close()
+
+    return render_template('nav-templates/edit_dobavljaca_forma.html', dobavljac=dobavljac)
+
+@app.route('/update_dobavljaca/<int:id>', methods=['POST'])
+def update_dobavljac(id):
+    naziv = request.form['id_odjel']
+    
+    adresa = request.form['adresa']
+    email = request.form['email']
+    telefon = request.form['telefon']
+    oib = request.form['datum_zaposlenja']
+    
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        UPDATE dobavljac
+        SET naziv = %s, adresa = %s, email = %s, telefon = %s, 
+            oib = %s
+        WHERE id = %s
+    """, (naziv, adresa, email, telefon, oib, id))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('dobavljac'))
     
 
 
