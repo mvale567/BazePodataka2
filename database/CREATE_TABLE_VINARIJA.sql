@@ -264,7 +264,7 @@ BEGIN
 END//
 DELIMITER ;
 
-SELECT broj_zaposlenika_u_odjelu(2);
+-- SELECT broj_zaposlenika_u_odjelu(2);
 
 
 
@@ -288,7 +288,7 @@ CREATE TRIGGER ai_zaposlenik
 	AFTER INSERT ON zaposlenik
     FOR EACH ROW
 BEGIN
-	CALL azuriraj_broj_zaposlenika(new.id_odjel);
+	CALL azuriraj_broj_zaposlenika(NEW.id_odjel);
 END //
 DELIMITER ;
 
@@ -297,7 +297,7 @@ CREATE TRIGGER ad_zaposlenik
 	AFTER DELETE ON zaposlenik
     FOR EACH ROW
 BEGIN
-	CALL azuriraj_broj_zaposlenika(old.id_odjel);
+	CALL azuriraj_broj_zaposlenika(OLD.id_odjel);
 END //
 DELIMITER ;
 
@@ -307,12 +307,12 @@ CREATE TRIGGER au_zaposlenik
     FOR EACH ROW
 BEGIN
 	-- ako je zaposlenik promijenio odjel
-	IF new.id_odjel != old.id_odjel THEN
-		CALL azuriraj_broj_zaposlenika(old.id_odjel);
-		CALL azuriraj_broj_zaposlenika(new.id_odjel);
+	IF NEW.id_odjel != OLD.id_odjel THEN
+		CALL azuriraj_broj_zaposlenika(OLD.id_odjel);
+		CALL azuriraj_broj_zaposlenika(NEW.id_odjel);
 	ELSE  -- ako se promijenio status zaposlenika
-		IF new.status_zaposlenika != old.status_zaposlenika THEN
-			CALL azuriraj_broj_zaposlenika(new.id_odjel);
+		IF NEW.status_zaposlenika != OLD.status_zaposlenika THEN
+			CALL azuriraj_broj_zaposlenika(NEW.id_odjel);
 		END IF;
     END IF;
 END //
@@ -330,9 +330,9 @@ BEGIN
     
     SELECT cijena INTO cijena_proizvoda
 		FROM proizvod
-        WHERE id = new.id_proizvod;
+        WHERE id = NEW.id_proizvod;
         
-	SET new.iznos_stavke = new.kolicina * cijena_proizvoda;
+	SET NEW.iznos_stavke = NEW.kolicina * cijena_proizvoda;
 END //
 DELIMITER ; 
 
@@ -348,9 +348,9 @@ BEGIN
 		SET ukupni_iznos = (
 			SELECT SUM(iznos_stavke)
 				FROM stavka_narudzbe
-                WHERE id_zahtjev_za_narudzbu = new.id_zahtjev_za_narudzbu
+                WHERE id_zahtjev_za_narudzbu = NEW.id_zahtjev_za_narudzbu
 		)
-		WHERE id = new.id_zahtjev_za_narudzbu;
+		WHERE id = NEW.id_zahtjev_za_narudzbu;
 END //
 DELIMITER ;
 
@@ -401,7 +401,7 @@ CREATE TRIGGER ai_skladiste_vino_akv
 	AFTER INSERT ON skladiste_vino
 	FOR EACH ROW
 BEGIN
-	CALL azuriraj_kolicinu_vina(new.id_berba, new.tip_transakcije, new.kolicina);
+	CALL azuriraj_kolicinu_vina(NEW.id_berba, NEW.tip_transakcije, NEW.kolicina);
 END //
 DELIMITER ;
 
@@ -411,7 +411,7 @@ CREATE TRIGGER ad_skladiste_vino_akv
 	AFTER DELETE ON skladiste_vino
     FOR EACH ROW
 BEGIN
-	CALL azuriraj_kolicinu_vina(old.id_berba, old.tip_transakcije, -old.kolicina);
+	CALL azuriraj_kolicinu_vina(OLD.id_berba, OLD.tip_transakcije, -OLD.kolicina);
 END //
 DELIMITER ;
 
@@ -421,8 +421,8 @@ CREATE TRIGGER au_skladiste_vino_akv
 	AFTER UPDATE ON skladiste_vino
     FOR EACH ROW
 BEGIN 
-	CALL azuriraj_kolicinu_vina(old.id_berba, old.tip_transakcije, -old.kolicina);
-    CALL azuriraj_kolicinu_vina(new.id_berba, new.tip_transakcije, new.kolicina);
+	CALL azuriraj_kolicinu_vina(OLD.id_berba, OLD.tip_transakcije, -OLD.kolicina);
+    CALL azuriraj_kolicinu_vina(NEW.id_berba, NEW.tip_transakcije, NEW.kolicina);
 END //
 DELIMITER ;
 
@@ -473,7 +473,7 @@ CREATE TRIGGER ai_skladiste_proizvod
 	AFTER INSERT ON skladiste_proizvod
     FOR EACH ROW
 BEGIN
-	CALL azuriraj_kolicinu_proizvoda(new.id_proizvod, new.tip_transakcije, new.kolicina);
+	CALL azuriraj_kolicinu_proizvoda(NEW.id_proizvod, NEW.tip_transakcije, NEW.kolicina);
 END //
 DELIMITER ;
 
@@ -483,7 +483,7 @@ CREATE TRIGGER ad_skladiste_proizvod
 	AFTER DELETE ON skladiste_proizvod
     FOR EACH ROW
 BEGIN
-	CALL azuriraj_kolicinu_proizvoda(old.id_proizvod, old.tip_transakcije, -old.kolicina);
+	CALL azuriraj_kolicinu_proizvoda(OLD.id_proizvod, OLD.tip_transakcije, -OLD.kolicina);
 END //
 DELIMITER ;
 
@@ -493,8 +493,8 @@ CREATE TRIGGER au_skladiste_proizvod
 	AFTER UPDATE ON skladiste_proizvod
     FOR EACH ROW
 BEGIN
-	CALL azuriraj_kolicinu_proizvoda(old.id_proizvod, old.tip_transakcije, -old.kolicina);
-    CALL azuriraj_kolicinu_proizvoda(new.id_proizvod, new.tip_transakcije, new.kolicina);
+	CALL azuriraj_kolicinu_proizvoda(OLD.id_proizvod, OLD.tip_transakcije, -OLD.kolicina);
+    CALL azuriraj_kolicinu_proizvoda(NEW.id_proizvod, NEW.tip_transakcije, NEW.kolicina);
 END //
 DELIMITER ;
 
@@ -547,7 +547,7 @@ CREATE TRIGGER ai_skladiste_repromaterijal
 	AFTER INSERT ON skladiste_repromaterijal
     FOR EACH ROW
 BEGIN
-	CALL azuriraj_kolicinu_repromaterijala(new.id_repromaterijal, new.tip_transakcije, new.kolicina);
+	CALL azuriraj_kolicinu_repromaterijala(NEW.id_repromaterijal, NEW.tip_transakcije, NEW.kolicina);
 END //
 DELIMITER ;
 
@@ -557,7 +557,7 @@ CREATE TRIGGER ad_skladiste_repromaterijal
 	AFTER DELETE ON skladiste_repromaterijal
     FOR EACH ROW
 BEGIN
-	CALL azuriraj_kolicinu_repromaterijala(old.id_repromaterijal, old.tip_transakcije, -old.kolicina); 
+	CALL azuriraj_kolicinu_repromaterijala(OLD.id_repromaterijal, OLD.tip_transakcije, -OLD.kolicina); 
 END //
 DELIMITER ;
 
@@ -567,8 +567,8 @@ CREATE TRIGGER au_skladiste_repromaterijal
 	AFTER UPDATE ON skladiste_repromaterijal
     FOR EACH ROW
 BEGIN
-	CALL azuriraj_kolicinu_repromaterijala(old.id_repromaterijal, old.tip_transakcije, -old.kolicina); 
-    CALL azuriraj_kolicinu_repromaterijala(new.id_repromaterijal, new.tip_transakcije, new.kolicina);
+	CALL azuriraj_kolicinu_repromaterijala(OLD.id_repromaterijal, OLD.tip_transakcije, -OLD.kolicina); 
+    CALL azuriraj_kolicinu_repromaterijala(NEW.id_repromaterijal, NEW.tip_transakcije, NEW.kolicina);
 END //
 DELIMITER ;
 
@@ -1439,10 +1439,9 @@ END //
 DELIMITER ;
 
 
-CALL azuriraj_prodaju(STR_TO_DATE('01.10.2024.', '%d.%m.%Y.'), STR_TO_DATE('31.12.2024.', '%d.%m.%Y.'));
+-- CALL azuriraj_prodaju(STR_TO_DATE('01.10.2024.', '%d.%m.%Y.'), STR_TO_DATE('31.12.2024.', '%d.%m.%Y.'));
 
-
-SELECT * FROM kvartalni_pregled_prodaje;
+-- SELECT * FROM kvartalni_pregled_prodaje;
 
 CREATE EVENT kvartalni_izvjestaj
 ON SCHEDULE EVERY 3 MONTH
@@ -1496,18 +1495,19 @@ CREATE TRIGGER au_zahtjev_za_narudzbu_otkazana
 	AFTER UPDATE ON zahtjev_za_narudzbu
     FOR EACH ROW
 BEGIN 
-	IF new.status_narudzbe = 'Otkazana' THEN
+	IF NEW.status_narudzbe = 'Otkazana' THEN
 		DELETE FROM stavka_narudzbe
-        WHERE id_zahtjev_za_narudzbu = new.id;
+        WHERE id_zahtjev_za_narudzbu = NEW.id;
     END IF;
 END //
 DELIMITER ;
 
+/* provjera
 SELECT * FROM stavka_narudzbe;
 UPDATE zahtjev_za_narudzbu 
 	SET status_narudzbe = 'Otkazana'
     WHERE id = 27;
-
+*/
 
 DELIMITER //
 CREATE TRIGGER bu_transport_datum_dolaska
@@ -1533,10 +1533,10 @@ CREATE TRIGGER au_transport_datum_dolaska
 	AFTER UPDATE ON transport
     FOR EACH ROW
 BEGIN
-	IF new.datum_dolaska IS NOT NULL THEN
+	IF NEW.datum_dolaska IS NOT NULL THEN
 		UPDATE zahtjev_za_narudzbu
 			SET status_narudzbe = 'Završena'
-            WHERE id_transport = new.id;
+            WHERE id_transport = NEW.id;
 	END IF;
 END //
 DELIMITER ;
@@ -1843,7 +1843,7 @@ SELECT CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, o.naziv AS odjel, radni_staz
 
 -- Funkcija – vraća broj transporta s registracijskim tablicama nekog grada 
 
-SELECT * FROM transport;
+
 
 DELIMITER //
 CREATE FUNCTION tablice_grad(p_tablice CHAR(2)) RETURNS INTEGER
@@ -1860,7 +1860,7 @@ END //
 DELIMITER ;
 
 -- SELECT tablice_grad('ZG');
-
+-- SELECT * FROM transport;
 
 
 -- Pogled – sve narudzbe koje nisu poslane/zavrsene/otkazane, a od datuma zahtjeva je proslo vise od tjedan dana
@@ -2164,10 +2164,10 @@ END //
 DELIMITER ;
 
 
--- Test procedure:
+/* Test procedure:
 CALL azuriraj_stanje('ulaz', 'Zagreb Skladište A', 50);
 
-SELECT * FROM mp_stanje_skladista_vina;
+SELECT * FROM mp_stanje_skladista_vina; */
 
 -- Procedura za dodavanje novog proizvoda:
 
@@ -2205,9 +2205,9 @@ BEGIN
 END //
 DELIMITER ;
   
-SELECT vrati_status_narudzbe(32) AS status_narudzbe2;
+-- SELECT vrati_status_narudzbe(32) AS status_narudzbe2;
 
-SHOW FUNCTION STATUS WHERE Db = 'vinarija';
+-- SHOW FUNCTION STATUS WHERE Db = 'vinarija';
 
 
 -- Funkcija koja vraća ukupnu vrijednost svih narudžba
@@ -2226,13 +2226,20 @@ BEGIN
 END //
 DELIMITER ;
 
-SELECT ukupno_narudzbe() AS ukupni_iznos_narudzbi;
+-- SELECT ukupno_narudzbe() AS ukupni_iznos_narudzbi;
 
 
 -- Transakcije
 
 
 -- 1. Transakcija, ažuriranje statusa narudžbe u 'Otkazana' i brisanje povezanog računa
+
+INSERT INTO zahtjev_za_narudzbu (id, id_kupac, id_zaposlenik, datum_zahtjeva, ukupni_iznos, status_narudzbe)
+VALUES (36, 1, 1, '2025-01-01', 100.00, 'Primljena');
+
+INSERT INTO racun (id, id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
+VALUES (33, 1, 31, '2025-01-02');
+
 START TRANSACTION;
 
 UPDATE zahtjev_za_narudzbu
@@ -2245,14 +2252,8 @@ WHERE id_zahtjev_za_narudzbu = 33;
 COMMIT;
 
 
-INSERT INTO zahtjev_za_narudzbu (id, id_kupac, id_zaposlenik, datum_zahtjeva, ukupni_iznos, status_narudzbe)
-VALUES (36, 1, 1, '2025-01-01', 100.00, 'Primljena');
-
-INSERT INTO racun (id, id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
-VALUES (33, 1, 31, '2025-01-02');
-
-SELECT * FROM zahtjev_za_narudzbu WHERE id = 36;
-SELECT * FROM racun WHERE id_zahtjev_za_narudzbu = 1;
+-- SELECT * FROM zahtjev_za_narudzbu WHERE id = 36;
+-- SELECT * FROM racun WHERE id_zahtjev_za_narudzbu = 1;
 
 
 
@@ -2274,7 +2275,7 @@ SELECT *
 FROM proizvod
 WHERE cijena > (SELECT AVG(cijena) FROM proizvod);
 
-SELECT * FROM proizvodi_iznad_prosjeka;
+-- SELECT * FROM proizvodi_iznad_prosjeka;
 
 
 
@@ -2296,7 +2297,7 @@ BEGIN
 END//
 DELIMITER ;
 
-SELECT * FROM punjenje;
+-- SELECT * FROM punjenje;
 -- INSERT INTO punjenje (id_proizvod, pocetak_punjenja, zavrsetak_punjenja, kolicina) VALUES(27, '2024-09-28', '2024-09-30', 320);
 
 
@@ -2313,7 +2314,7 @@ BEGIN
 END//
 DELIMITER ;
 
-SELECT * FROM zahtjev_za_narudzbu;
+-- SELECT * FROM zahtjev_za_narudzbu;
 -- INSERT INTO zahtjev_za_narudzbu (id_kupac, id_zaposlenik, id_transport, datum_zahtjeva, ukupni_iznos, status_narudzbe) VALUES(15, 5, 2, '2024-12-12', 12500, 'Primljena');
 
 
@@ -2337,8 +2338,7 @@ DELIMITER ;
 
 -- INSERT INTO berba VALUES (64, 2, 2027, 14.00);
 
-SELECT *
-	FROM berba;
+-- SELECT * FROM berba;
     
 -- trigger koji dodaje repromaterijal u skladiste_repromaterijal na temelju promijene statusa zahtjeva za nabavu u 'dostavljeno'
 
@@ -2354,14 +2354,14 @@ BEGIN
 END//
 DELIMITER ;
 
-
+/* provjera
 SELECT * FROM zahtjev_za_nabavu;
 SELECT * FROM skladiste_repromaterijal;
 
 UPDATE zahtjev_za_nabavu
 	SET status_nabave = 'dostavljeno'
 	WHERE id = 23;
-
+*/
     
 -- procedura za ispis detaljnog izvještaja o stanju skladišta
 
@@ -2385,9 +2385,9 @@ BEGIN
 END//
 DELIMITER ;
 
-SELECT * FROM skladiste_proizvod;
+-- SELECT * FROM skladiste_proizvod;
 
-CALL izvjestaj_stanja_skladista('2023-01-01', '2023-12-31');
+-- CALL izvjestaj_stanja_skladista('2023-01-01', '2023-12-31');
 
 
 -- procedura koja omogućuje ažuriranje statusa narudžbe u tablici zahtjev_za_narudzbu
@@ -2404,9 +2404,9 @@ BEGIN
 END//
 DELIMITER ;
 
-SELECT * FROM zahtjev_za_narudzbu;
+-- SELECT * FROM zahtjev_za_narudzbu;
 
-CALL azuriraj_status_narudzbe(25, 'Na čekanju');
+-- CALL azuriraj_status_narudzbe(25, 'Na čekanju');
 
 
 -- procedura koja generira račun za određeni zahtjev za narudžbu i automatski ga dodaje u tablicu racun
@@ -2422,9 +2422,9 @@ BEGIN
 END//
 DELIMITER ;
 
-SELECT * FROM racun;
+-- SELECT * FROM racun;
 
-CALL generiraj_racun(1, 35);
+-- CALL generiraj_racun(1, 35);
 
 -- funkcija za dobivanje imena kupca prema oibu
 
@@ -2442,8 +2442,8 @@ BEGIN
 END//
 DELIMITER ;
 
-SELECT * FROM kupac;
-SELECT ime_kupca_prema_oib(22345678901);
+-- SELECT * FROM kupac;
+-- SELECT ime_kupca_prema_oib(22345678901);
 
 -- funkcija za provjeru dostupnosti proizvoda u skladištu
 
@@ -2467,8 +2467,8 @@ BEGIN
 END//
 DELIMITER ;
 
-SELECT * FROM stanje_skladista_proizvoda;
-SELECT provjera_dostupnosti_proizvoda(33, 2000);
+-- SELECT * FROM stanje_skladista_proizvoda;
+-- SELECT provjera_dostupnosti_proizvoda(33, 2000);
 
 
 -- funkcija koja vraća broj završenih narudžbi za određenog kupca
@@ -2489,7 +2489,7 @@ BEGIN
 END//
 DELIMITER ;
 
-SELECT broj_narudzbi_kupca(15);
+-- SELECT broj_narudzbi_kupca(15);
 
 -- transakcija koja dodaje novog dobavljača i s njim povezani repromaterijal
 
@@ -2519,6 +2519,7 @@ END//
 
 DELIMITER ;
 
+/* provjera
 SELECT * FROM dobavljac;
 SELECT * FROM repromaterijal;
 
@@ -2532,7 +2533,7 @@ CALL dodaj_dobavljaca_i_repromaterijal(
     'Naljepnica za Ždrijebčevu krv',
     150.50                 
 );
-
+*/
 
 -- Prikaz proizvoda i njihovih povezanih repromaterijala s ukupnim troškovima repromaterijala po proizvodu
 CREATE VIEW proizvodni_troskovi AS
@@ -2557,9 +2558,8 @@ CREATE VIEW proizvodni_troskovi AS
 	GROUP BY 
 		p.id, v.naziv, b.godina_berbe, p.cijena;
 
-SELECT * FROM proizvodni_troskovi;
-
-SELECT * FROM repromaterijal;
+-- SELECT * FROM proizvodni_troskovi;
+-- SELECT * FROM repromaterijal;
 
 -- Prikaz narudžbi koje su još uvijek u obradi, zajedno s informacijama o kupcima koji su ih naručili
 
@@ -2608,7 +2608,7 @@ WHERE
 GROUP BY 
     z.id, z.ime, z.prezime;
     
-SELECT * FROM zahtjev_za_nabavu;
+-- SELECT * FROM zahtjev_za_nabavu;
 
 
 
@@ -2926,9 +2926,9 @@ VALUES ('admin'),
     ('moderator'), 
     ('zaposlenik');
 
-SELECT * FROM zaposlenik;
+-- SELECT * FROM zaposlenik;
 
-SELECT * FROM uloge;
+-- SELECT * FROM uloge;
 
 -- -proširivanje tablice zaposlenik i dodavanje privilegija za prijavu
 /*ALTER TABLE zaposlenik
@@ -2972,7 +2972,7 @@ VALUES
 (2, 'ne može brisati korisnike'),
 (4, 'nema nikakv pristup');
 
-SELECT * FROM uloge_pristupa;
+-- SELECT * FROM uloge_pristupa;
 
 
 
@@ -3003,7 +3003,7 @@ END;
 DELIMITER ;
 
 -- Testiranje funkcije
-SELECT provjera_prava_korisnika(7);
+-- SELECT provjera_prava_korisnika(7);
 
 
 
@@ -3024,7 +3024,8 @@ BEGIN
 END;
 //
 DELIMITER ;
-SELECT broj_admin_korisnika(); 
+
+-- SELECT broj_admin_korisnika(); 
 
 
 
@@ -3048,7 +3049,8 @@ BEGIN
 END;
 //
 DELIMITER ;
-CALL azuriraj_ulogu_zaposlenika(7, 1);  -- postavljamo zaposlenika s id=7 kao admina, preko tablice uloga id=1
+
+-- CALL azuriraj_ulogu_zaposlenika(7, 1);  -- postavljamo zaposlenika s id=7 kao admina, preko tablice uloga id=1
 
 
 -- DROP VIEW IF EXISTS pogled_administratori;
@@ -3059,7 +3061,7 @@ FROM zaposlenik
 JOIN uloge ON zaposlenik.uloga_id = uloge.uloga_id
 WHERE uloge.naziv = 'admin';
 
-SELECT * FROM pogled_administratori;
+-- SELECT * FROM pogled_administratori;
 
 
 -- pogleda koji su sve zaposlenici neaktivni
@@ -3114,7 +3116,7 @@ END;
 DELIMITER ;
 
 -- Testiranje funkcije
-SELECT broj_admin_korisnika(); 
+-- SELECT broj_admin_korisnika(); 
 
 
 
@@ -3140,7 +3142,7 @@ END;
 DELIMITER ;
 
 -- Testiranje procedure
-CALL azuriraj_ulogu_zaposlenika(7, 1);  -- Postavlja zaposlenika s ID 7 kao admina
+-- CALL azuriraj_ulogu_zaposlenika(7, 1);  -- Postavlja zaposlenika s ID 7 kao admina
 
 
 
@@ -3151,7 +3153,7 @@ FROM zaposlenik
 JOIN uloge ON zaposlenik.uloga_id = uloge.uloga_id
 WHERE uloge.naziv = 'admin';
 
-SELECT * FROM pogled_administratori;
+-- SELECT * FROM pogled_administratori;
 
 
 
@@ -3161,7 +3163,7 @@ SELECT zaposlenik.id, zaposlenik.ime, zaposlenik.prezime, zaposlenik.status_zapo
 FROM zaposlenik
 WHERE zaposlenik.status_zaposlenika = 'neaktivan';
 
-SELECT * FROM pogled_neaktivni_korisnici;
+-- SELECT * FROM pogled_neaktivni_korisnici;
 
 
 
@@ -3223,9 +3225,9 @@ END;
 //
 DELIMITER ;
 
-CALL prikazi_prava_korisnika(7);
+-- CALL prikazi_prava_korisnika(7);
 
-SELECT * FROM uloge;
+-- SELECT * FROM uloge;
 
 CREATE VIEW pogled_transakcija_skladista AS
 SELECT 
