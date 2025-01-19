@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="hr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Kupac</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+
+<body>
+
+    <section class="tablica">
+        <div class="tablica_container">
+            <h2 class="tablica_title">Plan proizvodnje</h2>
+            <div class="tablicac_navbar">
+                <button class="tablica_nav-button" id="addEmployeeBtn">Dodaj plan</button>
+                <button class="tablica_nav-button" id="editDeleteBtn">Uredi/Obriši</button>
+                <div class="dropdown-container">
+                    <button class="tablica_nav-button dropdown-toggle" id="sortBtn">Sortiraj</button>
+                    <div class="dropdown">
+                        <ul>
+                            <li><a href="#" class="dropdown-item">Po ID-ju</a></li>
+                            <li><a href="#" class="dropdown-item">Po zaposleniku</a></li>
+                            <li><a href="#" class="dropdown-item">Po zahtjevu za narudzbu</a></li>
+                            <li><a href="#" class="dropdown-item">Po datumu</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <table class="tablica_table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ID proizvoda</th>
+                        <th>Datum</th>
+                        <th>Kolicina</th>
+                      
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in plan_proizvodnje %}
+                    <tr>
+                        <td>{{ row[0] }}</td>
+                        <td>{{ row[1] }}</td>
+                        <td>{{ row[2] }}</td>
+                        <td>{{ row[3] }}</td>
+                        
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8">Nema podataka.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</body>
+
+</html>

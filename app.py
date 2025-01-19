@@ -492,6 +492,15 @@ def racun():
     
     return render_template('nav-templates/racun.html', racun=racun)
 
+@app.route('/plan_proizvodnje', methods=['GET'])
+def plan_proizvodnje():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM plan_proizvodnje;')
+    plan_proizvodnje = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/plan_proizvodnje.html', plan_proizvodnje=plan_proizvodnje)
+
 
 @app.route('/')
 def index():
