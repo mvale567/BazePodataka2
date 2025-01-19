@@ -1941,6 +1941,34 @@ SELECT k.*, COUNT(*) AS broj_racuna
 
 
 
+-- Procedura za novi zahtjev za nabavu
+
+DELIMITER //
+CREATE PROCEDURE dodaj_novu_nabavu(IN p_id_repromaterijal INTEGER, p_kolicina INTEGER, IN p_id_zaposlenik INTEGER)
+BEGIN 
+	DECLARE var_trenutna_kolicina INTEGER;
+    
+    SELECT kolicina INTO var_trenutna_kolicina
+		FROM stanje_skladista_repromaterijala
+        WHERE id_repromaterijal = p_id_repromaterijal;
+        
+	IF var_trenutna_kolicina IS NULL THEN
+		SIGNAL SQLSTATE '45014' SET MESSAGE_TEXT = 'Repromaterijal ne postoji u skladištu!';
+	ELSEIF var_trenutna_kolicina > 300 THEN
+		INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik) VALUES (p_id_repromaterijal, p_kolicina, CURDATE(), 'odbijeno', p_id_zaposlenik);
+        SIGNAL SQLSTATE '45015' SET MESSAGE_TEXT = 'Stanje repromaterijala na skladištu je dostatno, zahtjev za nabavu je odbijen!';
+	ELSE
+		INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik) VALUES (p_id_repromaterijal, p_kolicina, CURDATE(), 'odobreno', p_id_zaposlenik);
+	END IF;
+END //
+DELIMITER ;
+
+/* provjera
+CALL dodaj_novu_nabavu(37, 100, 4);
+
+SELECT * FROM stanje_skladista_repromaterijala;
+SELECT * FROM zahtjev_za_nabavu;
+*/
 
 
 
@@ -1991,7 +2019,8 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, k
 	FROM vino v
     JOIN berba b ON v.id = b.id_vino
     JOIN proizvod p ON p.id_berba = b.id
-    JOIN kvartalni_pregled_prodaje kpp ON p.id = kpp.id_proizvod;
+    JOIN kvartalni_pregled_prodaje kpp ON p.id = kpp.id_proizvod
+    ORDER BY kpp.ukupni_iznos DESC;
 
 CREATE VIEW punjenje_pogled AS
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, pu.oznaka_serije, pu.pocetak_punjenja, pu.zavrsetak_punjenja, pu.kolicina 
@@ -2018,13 +2047,6 @@ SELECT sn.id, sn.id_zahtjev_za_narudzbu, CONCAT(v.naziv, ' ', b.godina_berbe, ' 
     JOIN vino v ON v.id = b.id_vino
     ORDER BY sn.id;
     
-
-
-
-
-
-
-
 
 
 
@@ -2258,6 +2280,12 @@ SELECT * FROM proizvodi_iznad_prosjeka;
 
 
 
+
+
+
+
+
+
 ----------------------------------------------- DAVOR
 
 
@@ -2444,6 +2472,12 @@ SELECT * FROM zahtjev_za_nabavu;
 
 
 
+
+
+
+
+
+
 -------------------------------------------- Danijel
 
 -- Pogledi
@@ -2579,7 +2613,12 @@ COMMIT;
 
 
 
--- MARTA
+
+
+
+
+
+-------------------------------------------------------- MARTA
 -- upiti
 
 -- 1. Upit: Dohvati ukupnu količinu robe koju je prevezao svaki prijevoznik
@@ -2601,6 +2640,8 @@ JOIN transport t ON p.id = t.id_prijevoznik
 GROUP BY p.naziv
 HAVING SUM(t.kolicina) > 1000;
 
+
+
 -- pogledi
 
 -- 1. Pogled: Prikaz svih transporta s nazivima prijevoznika
@@ -2616,57 +2657,54 @@ FROM prijevoznik p
 LEFT JOIN transport t ON p.id = t.id_prijevoznik
 GROUP BY p.naziv;
 
+
+
 -- transakcije
 
-SELECT * FROM transport;
-/*
--- 1. Transakcija: Dodavanje novog transporta i ažuriranje broja transporta prijevoznika
+-- 1. Transakcija: Dodavanje novog transporta
 START TRANSACTION;
 INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca, datum_polaska, datum_dolaska, kolicina, status_transporta)
 VALUES (1, 'ZG6423JK', 'Goran Lukić', '2025-01-12', '2025-01-15', 500, 'u tijeku');
-UPDATE prijevoznik
-SET broj_transporta = broj_transporta + 1
-WHERE id = 1;
 COMMIT;
 
--- 2. Transakcija: Brisanje transporta i smanjenje broja transporta prijevoznika
+-- 2. Transakcija: Brisanje transporta
 START TRANSACTION;
-DELETE FROM transport WHERE id = 1;
-UPDATE prijevoznik
-SET broj_transporta = broj_transporta - 1
-WHERE id = 1;
+DELETE FROM transport WHERE id = 21;
 COMMIT;
+
+
 
 -- trigeri
--- 1. Triger: Ažuriraj broj transporta prijevoznika nakon unosa transporta
+
+-- 1. Triger:  Sprečavanje promjene statusa transporta na "Obavljen" ako nije unijet datum dolaska
 
 DELIMITER //
-CREATE TRIGGER update_broj_transporta_insert
-AFTER INSERT ON transport
+CREATE TRIGGER prije_transport_update
+BEFORE UPDATE ON transport
 FOR EACH ROW
 BEGIN
-    UPDATE prijevoznik
-    SET broj_transporta = broj_transporta + 1
-    WHERE id = NEW.id_prijevoznik;
-END //
+    IF NEW.status_transporta = 'Obavljen' AND (NEW.datum_dolaska IS NULL OR NEW.datum_dolaska = '') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Unesi datum_dolaska.';
+    END IF;
+END;//
 DELIMITER ;
 
--- 2. Triger: Ažuriraj broj transporta prijevoznika nakon brisanja transporta
+-- 2. Triger: Automatsko ažuriranje datuma dolaska prilikom promjene statusa transporta na "Otkazan"
 DELIMITER //
-CREATE TRIGGER update_broj_transporta_delete
-AFTER DELETE ON transport
+CREATE TRIGGER za_otkazani_transport
+BEFORE UPDATE ON transport
 FOR EACH ROW
 BEGIN
-    UPDATE prijevoznik
-    SET broj_transporta = broj_transporta - 1
-    WHERE id = OLD.id_prijevoznik;
-END//
+    IF NEW.status_transporta = 'Otkazan' AND OLD.status_transporta <> 'Otkazan' THEN
+        SET NEW.datum_dolaska = NULL;
+    END IF;
+END;//
 DELIMITER ;
-*/
+
+
+
 -- procedure
-
-
-
 
 -- 1. Procedura: Dodavanje novog transporta
 DELIMITER //
@@ -2695,6 +2733,8 @@ BEGIN
     VALUES (p_naziv, p_oib, p_kontakt);
 END//
 DELIMITER ;
+
+
 
 -- funkcije
 
@@ -2725,6 +2765,10 @@ BEGIN
     RETURN broj_transporta;
 END//
 DELIMITER ;
+
+
+
+
 
 
 
