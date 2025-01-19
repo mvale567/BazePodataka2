@@ -1455,7 +1455,7 @@ END //
 DELIMITER ;
 
 
--- CALL azuriraj_prodaju(STR_TO_DATE('01.10.2024.', '%d.%m.%Y.'), STR_TO_DATE('31.12.2024.', '%d.%m.%Y.'));
+CALL azuriraj_prodaju(STR_TO_DATE('01.10.2024.', '%d.%m.%Y.'), STR_TO_DATE('31.12.2024.', '%d.%m.%Y.'));
 
 -- SELECT * FROM kvartalni_pregled_prodaje;
 
@@ -2062,7 +2062,8 @@ SELECT sn.id, sn.id_zahtjev_za_narudzbu, CONCAT(v.naziv, ' ', b.godina_berbe, ' 
     ORDER BY sn.id;
     
 
-
+DROP ROLE IF EXISTS zaposlenik_prodaje;
+DROP USER IF EXISTS 'Prodavac1'@'localhost';
 
 CREATE ROLE zaposlenik_prodaje;
 
@@ -3167,8 +3168,8 @@ ORDER BY id_berba, lokacija, tip_transakcije;
 
 
 
-
-
+DROP USER IF EXISTS 'SkladisteSef'@'localhost';
+DROP USER IF EXISTS 'HRManager'@'localhost';
 
 CREATE USER 'SkladisteSef'@'localhost' IDENTIFIED BY 'skladiste123';
 
@@ -3191,31 +3192,29 @@ GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
 
 
 
-GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
-
-CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin123';
-GRANT ALL PRIVILEGES ON vinarija.* TO 'admin'@'localhost';
-
 
 
 -- -------------------------------------------------------------------------------------------------------------------------------Marko
+DROP USER IF EXISTS 'admin'@'localhost';
+DROP USER IF EXISTS 'manager_prodaje_role';
+DROP USER IF EXISTS 'manager_prodaje'@'localhost';
+
+
 CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin';
 GRANT ALL PRIVILEGES ON vinarija.* TO 'admin'@'localhost';
-
 
 
 CREATE ROLE 'manager_prodaje_role';
 GRANT SELECT, INSERT, UPDATE ON vinarija.berba TO 'manager_prodaje_role';
 GRANT SELECT, INSERT, UPDATE ON vinarija.dobavljac TO 'manager_prodaje_role';
 GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'manager_prodaje_role';
-GRANT SELECT, INSERT, UPDATE ON vinarija.plan_prizvodnje TO 'manager_prodaje_role';
+GRANT SELECT, INSERT, UPDATE ON vinarija.plan_proizvodnje TO 'manager_prodaje_role';
 GRANT SELECT, INSERT, UPDATE ON vinarija.prijevoznik TO 'manager_prodaje_role';
 GRANT SELECT, INSERT, UPDATE ON vinarija.proizvod TO 'manager_prodaje_role';
 GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_vino TO 'manager_prodaje_role';
 GRANT SELECT, INSERT, UPDATE ON vinarija.stanje_skladista_vina TO 'manager_prodaje_role';
 GRANT SELECT, INSERT, UPDATE ON vinarija.transport TO 'manager_prodaje_role';
 
-DROP USER 'manager_prodaje'@'localhost';
 
 CREATE USER 'manager_prodaje'@'localhost' IDENTIFIED BY 'manager_prodaje';
 
