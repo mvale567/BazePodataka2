@@ -14,7 +14,8 @@
 
     <section class="tablica">
         <div class="tablica_container">
-            <div class="tablica_navbar">
+            <h2 class="tablica_title">Računi</h2>
+            <div class="tablica_navbar nema">
                 <button class="tablica_nav-button" id="addEmployeeBtn">Dodaj kupca</button>
                 <button class="tablica_nav-button" id="editDeleteBtn">Uredi/Obriši</button>
                 <button class="tablica_nav-button dropdown-toggle" id="sortBtn">Sortiraj</button>
@@ -47,11 +48,7 @@
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
                         <td>{{ row[3] }}</td>
-                        <td>{{ row[4] }}</td>
-                        <td>{{ row[5] }}</td>
-                        <td>{{ row[6] }}</td>
-                        <td>{{ row[7] }}</td>
-                    </tr>
+                        
                     {% else %}
                     <tr>
                         <td colspan="8">Nema podataka.</td>
