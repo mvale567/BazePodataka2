@@ -1881,7 +1881,7 @@ DELIMITER ;
 
 -- Pogled – sve narudzbe koje nisu poslane/zavrsene/otkazane, a od datuma zahtjeva je proslo vise od tjedan dana
 
--- CREATE VIEW zaostale_narudzbe AS
+CREATE VIEW zaostale_narudzbe AS
 SELECT zzn.id, k.naziv AS kupac, CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, zzn.datum_zahtjeva, zzn.ukupni_iznos, zzn.status_narudzbe
 	FROM zahtjev_za_narudzbu zzn
     JOIN kupac k ON k.id = zzn.id_kupac
@@ -2064,8 +2064,36 @@ SELECT sn.id, sn.id_zahtjev_za_narudzbu, CONCAT(v.naziv, ' ', b.godina_berbe, ' 
 
 
 
+CREATE ROLE zaposlenik_prodaje;
+
+GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO zaposlenik_prodaje;
+GRANT SELECT, INSERT, UPDATE ON vinarija.proizvod TO zaposlenik_prodaje;
+GRANT SELECT, INSERT, UPDATE ON vinarija.zahtjev_za_narudzbu TO zaposlenik_prodaje;
+GRANT SELECT, INSERT, UPDATE ON vinarija.stavka_narudzbe TO zaposlenik_prodaje;
+GRANT SELECT, INSERT, UPDATE ON vinarija.racun TO zaposlenik_prodaje;
+GRANT SELECT ON vinarija.stanje_skladista_proizvoda TO zaposlenik_prodaje;
+GRANT SELECT ON vinarija.kvartalni_pregled_prodaje TO zaposlenik_prodaje;
+GRANT SELECT ON vinarija.racuni_stavke TO zaposlenik_prodaje;
+GRANT SELECT ON vinarija.proizvod_prodaja TO zaposlenik_prodaje;
+GRANT SELECT ON vinarija.zaostale_narudzbe TO zaposlenik_prodaje;
+GRANT SELECT ON vinarija.proizvod_skladiste TO zaposlenik_prodaje;
+GRANT SELECT ON vinarija.kvartalna_prodaja TO zaposlenik_prodaje;
+GRANT SELECT ON vinarija.narudzbe TO zaposlenik_prodaje;
+GRANT SELECT ON vinarija.stavke TO zaposlenik_prodaje;
+GRANT EXECUTE ON PROCEDURE vinarija.azuriraj_prodaju TO zaposlenik_prodaje;
+GRANT EXECUTE ON PROCEDURE vinarija.azuriraj_prodane_proizvode TO zaposlenik_prodaje;
+GRANT EXECUTE ON PROCEDURE vinarija.analiziraj_narudzbe_po_mjesecu TO zaposlenik_prodaje;
+GRANT EXECUTE ON PROCEDURE vinarija.prikazi_narudzbe_za_proizvod TO zaposlenik_prodaje;
+GRANT EXECUTE ON FUNCTION vinarija.postotak_proizvoda TO zaposlenik_prodaje;
 
 
+CREATE USER 'Prodavac1'@'localhost' IDENTIFIED BY 'Prodavac1_password';
+
+GRANT zaposlenik_prodaje TO 'Prodavac1'@'localhost';
+SET DEFAULT ROLE zaposlenik_prodaje TO 'Prodavac1'@'localhost';
+
+-- SHOW GRANTS FOR 'Prodavac1'@'localhost';
+-- SHOW GRANTS FOR zaposlenik_prodaje;
 
 
 
@@ -3257,6 +3285,11 @@ GROUP BY id_berba, lokacija, tip_transakcije
 ORDER BY id_berba, lokacija, tip_transakcije;
 
 
+
+
+
+
+
 CREATE USER 'SkladisteSef'@'localhost' IDENTIFIED BY 'skladiste123';
 
 GRANT SELECT, INSERT, UPDATE ON vinarija.skladiste_proizvod TO 'SkladisteSef'@'localhost';
@@ -3275,3 +3308,6 @@ CREATE USER 'HRManager'@'localhost' IDENTIFIED BY 'ljudi123';
 GRANT SELECT, INSERT, UPDATE ON vinarija.odjel TO 'HRManager'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON vinarija.zaposlenik TO 'HRManager'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON vinarija.kupac TO 'HRManager'@'localhost';
+
+
+
