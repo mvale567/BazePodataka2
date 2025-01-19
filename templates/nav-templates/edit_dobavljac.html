@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="hr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Naslovna</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+
+<body>
+
+    <section class="zaposlenik">
+        <div class="edit_zaposlenik_container">
+            <table class="zaposlenik_table">
+                <thead class="edit_thead">
+                    <tr>
+                        <th>ID</th>
+                        <th>Naziv</th>
+                         <th>Adresa</th>
+                        <th>Email</th>
+                        <th>Telefon</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in dobavlac %}
+                    <tr>
+                        <td>{{ row[0] }}</td> <!-- ID -->
+                        <td>{{ row[1] }}</td> <!-- Naziv -->
+                        <td>{{ row[3] }}</td> <!-- Adresa -->
+                        <td>{{ row[2] }}</td> <!-- Email -->
+                        <td>{{ row[4] }}</td> <!-- Telefon -->
+                       
+                        <td>
+                            <!-- Tipka za Uredi -->
+                            <a href="{{ url_for('edit_dobavljac_forma', id=row[0]) }}">
+                                <button class="btn-edit">Uredi</button>
+                            </a>
+                        </td>
+                        <td>
+                            <form class="form_btn-delete" action="{{ url_for('obrisi_dobavljac', id=row[0]) }}"
+                                method="POST">
+                                <button type="submit" class="btn-delete">Obriši</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8">Nema podataka.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</body>
+
+
+</html>

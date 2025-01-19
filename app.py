@@ -161,6 +161,34 @@ def update_zaposlenika(id):
 
     return redirect(url_for('zaposlenik'))
 
+
+
+@app.route('/dodaj_dobavljaca_forma', methods=['GET'])
+def dodaj_dobavljaca_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM dobavljac;')
+    dobavljac = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/dodaj_dobavljaca.html', dobavljac=dobavljac)
+
+
+
+@app.route('/dodaj_dobavljaca', methods=['POST'])
+def dodaj_dobavljaca():
+    naziv = request.form['naziv']
+    adresa = request.form['adresa']
+    email = request.form['email']
+    telefon = request.form['telefon']
+    oib = request.form['oib']
+
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO dobavljac (naziv, adresa, email, telefon, oib) VALUES(%s, %s, %s, %s, %s)",
+                 (naziv, adresa, email, telefon, oib,))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('dobavljac'))
     
 
 
