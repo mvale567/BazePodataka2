@@ -1393,8 +1393,7 @@ BEGIN
     DECLARE CONTINUE HANDLER FOR NOT FOUND 
     BEGIN
 		SET handler_broj = 1;
-    END;
-    
+    END;  
 	IF DATE_FORMAT(p_pocetni_datum, '%d.%m.') NOT IN ('01.01.', '01.04.', '01.07.', '01.10.') THEN
 		SIGNAL SQLSTATE '45008' SET MESSAGE_TEXT = 'Neispravan unos, početni datum mora biti početak kvartala!';
 	END IF;
@@ -1490,7 +1489,6 @@ UPDATE zahtjev_za_narudzbu
 CALL izracunaj_kolicinu_transporta(@novi_transport);
 
 COMMIT;
-
 
 
 DELIMITER //
@@ -2288,12 +2286,42 @@ SELECT * FROM proizvodi_iznad_prosjeka;
 
 ----------------------------------------------- DAVOR
 
+-- trigger koji generira jedinstvenu znaku serijskog broja za novi unos u tablicu punjenje
+DELIMITER //
+CREATE TRIGGER bi_generiraj_serijski_broj_proizvoda
+BEFORE INSERT ON punjenje
+FOR EACH ROW
+BEGIN
+    SET NEW.oznaka_serije = CONCAT('SR-', NEW.id_proizvod, '-', UNIX_TIMESTAMP());
+END//
+DELIMITER ;
+
+SELECT * FROM punjenje;
+-- INSERT INTO punjenje (id_proizvod, pocetak_punjenja, zavrsetak_punjenja, kolicina) VALUES(27, '2024-09-28', '2024-09-30', 320);
+
+
+-- trigger koji dodaje rabat od 10% ako ukupni iznos narudžbe prelazi 10000
+
+DELIMITER //
+CREATE TRIGGER bi_dodaj_rabat_za_velike_narudzbe
+BEFORE INSERT ON zahtjev_za_narudzbu
+FOR EACH ROW
+BEGIN
+    IF NEW.ukupni_iznos > 10000 THEN
+        SET NEW.ukupni_iznos = NEW.ukupni_iznos * 0.9;
+    END IF;
+END//
+DELIMITER ;
+
+SELECT * FROM zahtjev_za_narudzbu;
+-- INSERT INTO zahtjev_za_narudzbu (id_kupac, id_zaposlenik, id_transport, datum_zahtjeva, ukupni_iznos, status_narudzbe) VALUES(15, 5, 2, '2024-12-12', 12500, 'Primljena');
+
 
 -- trigger koji provjerava je li godina berbe ispravna (tekuća ili neka od prethodnih godina)
 
 
 DELIMITER //
-CREATE TRIGGER provjera_godine_berbe 
+CREATE TRIGGER bi_provjera_godine_berbe 
 BEFORE INSERT ON berba
 FOR EACH ROW
 BEGIN
@@ -2314,6 +2342,7 @@ SELECT *
     
 -- trigger koji dodaje repromaterijal u skladiste_repromaterijal na temelju promijene statusa zahtjeva za nabavu u 'dostavljeno'
 
+-- DROP TRIGGER au_dodaj_dostavljeni_repromaterijal;
 DELIMITER //
 CREATE TRIGGER au_dodaj_dostavljeni_repromaterijal
 AFTER UPDATE ON zahtjev_za_nabavu
@@ -2329,11 +2358,36 @@ DELIMITER ;
 SELECT * FROM zahtjev_za_nabavu;
 SELECT * FROM skladiste_repromaterijal;
 
-INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik) VALUES (1, 100, CURDATE(), 'odobreno', 10);
-
 UPDATE zahtjev_za_nabavu
 	SET status_nabave = 'dostavljeno'
-	WHERE id = 256;
+	WHERE id = 23;
+
+    
+-- procedura za ispis detaljnog izvještaja o stanju skladišta
+
+DELIMITER //
+CREATE PROCEDURE izvjestaj_stanja_skladista(
+    IN p_pocetni_datum DATE,
+    IN p_zavrsni_datum DATE
+)
+BEGIN
+    SELECT
+        p.id,
+        v.naziv AS naziv_proizvoda,
+        s.kolicina,
+        s.lokacija,
+        s.datum
+    FROM skladiste_proizvod s
+    JOIN proizvod p ON p.id = s.id_proizvod
+    JOIN berba b ON b.id = p.id_berba
+    JOIN vino v ON v.id = b.id_vino
+    WHERE s.datum BETWEEN p_pocetni_datum AND p_zavrsni_datum;
+END//
+DELIMITER ;
+
+SELECT * FROM skladiste_proizvod;
+
+CALL izvjestaj_stanja_skladista('2023-01-01', '2023-12-31');
 
 
 -- procedura koja omogućuje ažuriranje statusa narudžbe u tablici zahtjev_za_narudzbu
@@ -2372,6 +2426,50 @@ SELECT * FROM racun;
 
 CALL generiraj_racun(1, 35);
 
+-- funkcija za dobivanje imena kupca prema oibu
+
+DELIMITER //
+CREATE FUNCTION ime_kupca_prema_oib(k_oib CHAR(11))
+RETURNS VARCHAR(150)
+DETERMINISTIC
+BEGIN
+    DECLARE ime_prezime VARCHAR(150);
+    SELECT CONCAT(ime, ' ', prezime) 
+    INTO ime_prezime    
+    FROM kupac
+    WHERE oib = k_oib;
+    RETURN ime_prezime;
+END//
+DELIMITER ;
+
+SELECT * FROM kupac;
+SELECT ime_kupca_prema_oib(22345678901);
+
+-- funkcija za provjeru dostupnosti proizvoda u skladištu
+
+DELIMITER //
+CREATE FUNCTION provjera_dostupnosti_proizvoda(
+    ssp_id_proizvod INT,
+    ssp_potrebna_kolicina INT
+)
+RETURNS VARCHAR(10)
+DETERMINISTIC
+BEGIN
+    DECLARE dostupno INT;
+    SELECT kolicina INTO dostupno
+    FROM stanje_skladista_proizvoda
+    WHERE id_proizvod = ssp_id_proizvod;
+    IF dostupno >= ssp_potrebna_kolicina THEN
+        RETURN 'Dostupno';
+    ELSE
+        RETURN 'Nedostupno';
+    END IF;
+END//
+DELIMITER ;
+
+SELECT * FROM stanje_skladista_proizvoda;
+SELECT provjera_dostupnosti_proizvoda(33, 2000);
+
 
 -- funkcija koja vraća broj završenih narudžbi za određenog kupca
 
@@ -2392,6 +2490,48 @@ END//
 DELIMITER ;
 
 SELECT broj_narudzbi_kupca(15);
+
+-- transakcija koja dodaje novog dobavljača i s njim povezani repromaterijal
+
+DELIMITER //
+CREATE PROCEDURE dodaj_dobavljaca_i_repromaterijal(
+    IN p_naziv_dobavljaca VARCHAR(50),
+    IN p_adresa_dobavljaca VARCHAR(50),
+    IN p_email_dobavljaca VARCHAR(50),
+    IN p_telefon_dobavljaca VARCHAR(20),
+    IN p_oib_dobavljaca CHAR(11),
+    IN p_vrsta_repromaterijal VARCHAR(100),
+    IN p_opis_repromaterijal VARCHAR(100),
+    IN p_jedinicna_cijena DECIMAL(10, 2)
+)
+BEGIN
+    DECLARE new_id_dobavljac INT;    
+    START TRANSACTION;    
+		INSERT INTO dobavljac (naziv, adresa, email, telefon, oib)
+		VALUES (p_naziv_dobavljaca, p_adresa_dobavljaca, p_email_dobavljaca, p_telefon_dobavljaca, p_oib_dobavljaca);
+		
+		SET new_id_dobavljac = LAST_INSERT_ID();
+		
+		INSERT INTO repromaterijal (id_dobavljac, vrsta, opis, jedinicna_cijena)
+		VALUES (new_id_dobavljac, p_vrsta_repromaterijal, p_opis_repromaterijal, p_jedinicna_cijena);
+    COMMIT;
+END//
+
+DELIMITER ;
+
+SELECT * FROM dobavljac;
+SELECT * FROM repromaterijal;
+
+CALL dodaj_dobavljaca_i_repromaterijal(
+    'ABC d.o.o.',           
+    'Ulica 123, Zagreb',    
+    'kontakt@abc.hr',     
+    '123486789',          
+    '12645678901',       
+    'Čelik',  
+    'Naljepnica za Ždrijebčevu krv',
+    150.50                 
+);
 
 
 -- Prikaz proizvoda i njihovih povezanih repromaterijala s ukupnim troškovima repromaterijala po proizvodu
