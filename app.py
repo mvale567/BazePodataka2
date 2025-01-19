@@ -1,3 +1,5 @@
+
+#....MARKO........
 from datetime import datetime
 
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session
@@ -55,10 +57,11 @@ def login():
         return render_template('index.html', message=message)
     
 
+#...........
 
 
 @app.route('/zaposlenik', methods=['GET'])
-def show_zaposlenik():
+def zaposlenik():
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM zaposlenik;")
     zaposlenik = cur.fetchall()
@@ -68,6 +71,98 @@ def show_zaposlenik():
     print(zaposlenik)
 
     return render_template('nav-templates/zaposlenik.html', zaposlenik=zaposlenik)
+
+@app.route('/dodaj_zaposlenika_forma', methods=['GET'])
+def dodaj_zaposlenika_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM zaposlenik;')
+    zaposlenik = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/dodaj_zaposlenika.html', zaposlenik=zaposlenik)
+
+@app.route('/dodaj_zaposlenika', methods=['POST'])
+def dodaj_zaposlenika():
+    id_odjel = request.form['id_odjel']
+    ime = request.form['ime']
+    prezime = request.form['prezime']
+    adresa = request.form['adresa']
+    email = request.form['email']
+    telefon = request.form['telefon']
+    datum_zaposlenja = request.form['datum_zaposlenja']
+    status_zaposlenika = request.form['status_zaposlenika']
+    uloga_id = request.form['uloga_id']
+    lozinka = request.form['lozinka']
+
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO zaposlenik (id_odjel, ime, prezime, adresa, email, telefon, datum_zaposlenja, status_zaposlenika, uloga_id, lozinka) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                 (id_odjel, ime, prezime, adresa, email, telefon, datum_zaposlenja, status_zaposlenika, uloga_id, lozinka))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('zaposlenik'))
+
+@app.route('/edit_zaposlenika', methods=['GET'])
+def edit_zaposlenika():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM zaposlenik;')
+    zaposlenik = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/edit_zaposlenika.html', zaposlenik=zaposlenik)
+
+
+@app.route('/obrisi_zaposlenika/<int:id>', methods=['POST'])
+def obrisi_zaposlenika(id):
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("DELETE FROM zaposlenik WHERE id = %s", [id])
+        mysql.connection.commit()
+        cur.close()
+
+        return redirect(url_for('edit_zaposlenika'))
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return redirect(url_for('edit_zaposlenika'))
+
+
+@app.route('/edit_zaposlenika_forma/<int:id>', methods=['GET'])
+def edit_zaposlenika_forma(id):
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT * FROM zaposlenik WHERE id = %s', [id])
+    zaposlenik = cur.fetchone()
+    cur.close()
+
+    return render_template('nav-templates/edit_zaposlenika_forma.html', zaposlenik=zaposlenik)
+    
+@app.route('/update_zaposlenika/<int:id>', methods=['POST'])
+def update_zaposlenika(id):
+    id_odjel = request.form['id_odjel']
+    ime = request.form['ime']
+    prezime = request.form['prezime']
+    adresa = request.form['adresa']
+    email = request.form['email']
+    telefon = request.form['telefon']
+    datum_zaposlenja = request.form['datum_zaposlenja']
+    status_zaposlenika = request.form['status_zaposlenika']
+    uloga_id = request.form['uloga_id']
+    lozinka = request.form['lozinka']
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        UPDATE zaposlenik 
+        SET id_odjel = %s, ime = %s, prezime = %s, adresa = %s, email = %s, telefon = %s, 
+            datum_zaposlenja = %s, status_zaposlenika = %s, uloga_id = %s, lozinka = %s
+        WHERE id = %s
+    """, (id_odjel, ime, prezime, adresa, email, telefon, datum_zaposlenja, status_zaposlenika, uloga_id, lozinka, id))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('zaposlenik'))
+
+    
+
 
 @app.route('/repromaterijal', methods=['GET'])
 def repromaterijal():
@@ -168,6 +263,7 @@ def proizvod():
     cur.close()
 
     return render_template('nav-templates/proizvod.html', proizvod=proizvod)
+
 
 #Vid-dobavljac
 @app.route('/dobavljac', methods=['GET'])
@@ -510,9 +606,9 @@ def index():
 def home():
     return render_template('home.html')
 
-@app.route('/zaposlenik')
-def zaposlenik():
-    return render_template('nav-templates/zaposlenik.html')
+# @app.route('/zaposlenik')
+# def zaposlenik():
+#     return render_template('nav-templates/zaposlenik.html')
 
 #@app.route('/dobavljac')
 #def dobavljac():

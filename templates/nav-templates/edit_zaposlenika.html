@@ -13,17 +13,9 @@
 <body>
 
     <section class="zaposlenik">
-        <div class="zaposlenik_container">
-            <h2 class="tablica_title">Zaposlenik</h2>
-            <div class="zaposlenik_navbar">
-                <button class="zaposlenik_nav-button" onclick="window.location.href = '/dodaj_zaposlenika_forma'"
-                    id="addEmployeeBtn">Dodaj zaposlenika</button>
-                <button class="zaposlenik_nav-button" onclick="window.location.href = '/edit_zaposlenika'"
-                    id="editDeleteBtn">Uredi/ Obriši</button>
-            </div>
-
+        <div class="edit_zaposlenik_container">
             <table class="zaposlenik_table">
-                <thead>
+                <thead class="edit_thead">
                     <tr>
                         <th>ID</th>
                         <th>Ime</th>
@@ -35,6 +27,8 @@
                         <th>Status zaposlenika</th>
                         <th>Uloga</th>
                         <th>Lozinka:</th>
+                        <th></th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,6 +45,18 @@
                         <td>{{ row[9] }}</td> <!-- Uloga  -->
                         <td>{{ row[10] }}</td> <!-- Lozinka -->
 
+                        <td>
+                            <!-- Tipka za Uredi -->
+                            <a href="{{ url_for('edit_zaposlenika_forma', id=row[0]) }}">
+                                <button class="btn-edit">Uredi</button>
+                            </a>
+                        </td>
+                        <td>
+                            <form class="form_btn-delete" action="{{ url_for('obrisi_zaposlenika', id=row[0]) }}"
+                                method="POST">
+                                <button type="submit" class="btn-delete">Obriši</button>
+                            </form>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
@@ -63,5 +69,44 @@
     </section>
 
 </body>
+
+
+<style>
+    .edit_zaposlenik_container {
+        background-color: #ffffff;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        border-radius: 5px;
+        padding: 5px;
+        padding-top: 0;
+        width: 100%;
+        max-width: 1600px;
+        height: 95vh;
+        overflow-y: auto;
+    }
+
+
+    .edit_thead {
+        position: sticky;
+        top: 0px;
+        z-index: 40;
+        background-color: #00aaff;
+        color: white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-edit {
+        width: 80px;
+    }
+
+    .form_btn-delete {
+        all: unset;
+        display: inline;
+    }
+
+    .btn-delete {
+        width: 80px;
+        background-color: red !important;
+    }
+</style>
 
 </html>

@@ -16,10 +16,12 @@
         <div class="kupac_container">
             <h2 class="tablica_title">Vino</h2>
             <div class="kupac_navbar">
-                <button class="kupac_nav-button" id="addEmployeeBtn" onclick="window.location.href = '/dodaj_vino_forma'">Dodaj vino</button>
-                <button class="kupac_nav-button" id="editDeleteBtn" onclick="window.location.href = '/obrisi_vino_forma'">Obriši</button>
+                <button class="kupac_nav-button" id="addEmployeeBtn"
+                    onclick="window.location.href = '/dodaj_vino_forma'">Dodaj vino</button>
+                <button class="kupac_nav-button" id="editDeleteBtn"
+                    onclick="window.location.href = '/obrisi_vino_forma'">Obriši</button>
                 <div class="dropdown-container">
-                    
+
                     <div class="dropdown">
                         <ul>
                             <li><a href="#" class="dropdown-item">Po imenu</a></li>
@@ -36,7 +38,7 @@
                         <th>ID</th>
                         <th>Naziv</th>
                         <th>Vrsta</th>
-                        <th>Sorta</th>                        
+                        <th>Sorta</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -45,7 +47,7 @@
                         <td>{{ row[0] }}</td>
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
-                        <td>{{ row[3] }}</td>                        
+                        <td>{{ row[3] }}</td>
                     </tr>
                     {% else %}
                     <tr>
