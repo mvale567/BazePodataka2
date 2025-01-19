@@ -56,6 +56,8 @@ CREATE TABLE berba (
     CONSTRAINT berba_postotak_alkohola_ck CHECK (postotak_alkohola BETWEEN 5 AND 25)
 );
 
+CREATE INDEX idx_berba_id_vino ON berba(id_vino);
+
 
 ----------------------------------------------- DAVOR
 
@@ -74,13 +76,15 @@ CREATE TABLE proizvod (
 CREATE TABLE punjenje (
     id INTEGER AUTO_INCREMENT PRIMARY KEY,
     id_proizvod INTEGER NOT NULL,
-    oznaka_serije VARCHAR(20) NOT NULL,
+    oznaka_serije VARCHAR(20) NOT NULL UNIQUE,
     pocetak_punjenja DATE NOT NULL,
     zavrsetak_punjenja DATE NOT NULL,
     kolicina INTEGER NOT NULL, 
     FOREIGN KEY (id_proizvod) REFERENCES proizvod(id),
     CONSTRAINT punjenje_kolicina_ck CHECK (kolicina > 0)
 );
+
+CREATE INDEX idx_punjenje_id_proizvod ON punjenje(id_proizvod);
 
 
 
@@ -147,6 +151,9 @@ CREATE TABLE repromaterijal_proizvod (
     CONSTRAINT repromaterijal_proizvod_uk UNIQUE (id_proizvod, id_repromaterijal)
 );
 
+CREATE INDEX idx_repromaterijal_proizvod_id_proizvod ON repromaterijal_proizvod(id_proizvod);
+CREATE INDEX idx_repromaterijal_proizvod_id_repromaterijal ON repromaterijal_proizvod(id_repromaterijal);
+
 
 CREATE TABLE zahtjev_za_narudzbu (
     id INTEGER AUTO_INCREMENT PRIMARY KEY,
@@ -161,6 +168,12 @@ CREATE TABLE zahtjev_za_narudzbu (
     FOREIGN KEY (id_transport) REFERENCES transport(id)
 );
 
+CREATE INDEX idx_zahtjev_za_narudzbu_id_kupac ON zahtjev_za_narudzbu(id_kupac);
+CREATE INDEX idx_zahtjev_za_narudzbu_id_zaposlenik ON zahtjev_za_narudzbu(id_zaposlenik);
+CREATE INDEX idx_zahtjev_za_narudzbu_id_transport ON zahtjev_za_narudzbu(id_transport);
+CREATE INDEX idx_zahtjev_za_narudzbu_status_narudzbe ON zahtjev_za_narudzbu(status_narudzbe);
+CREATE INDEX idx_zahtjev_za_narudzbu_datum_zahtjeva ON zahtjev_za_narudzbu(datum_zahtjeva);
+
 
 CREATE TABLE stavka_narudzbe (
     id INTEGER AUTO_INCREMENT PRIMARY KEY,
@@ -173,6 +186,9 @@ CREATE TABLE stavka_narudzbe (
     CONSTRAINT stavka_narudzbe_uk UNIQUE (id_zahtjev_za_narudzbu, id_proizvod),
     CONSTRAINT stavka_narudzbe_kolicina_ck CHECK (kolicina > 0)
 );
+
+CREATE INDEX idx_stavka_narudzbe_id_zahtjev_za_narudzbu ON stavka_narudzbe(id_zahtjev_za_narudzbu);
+CREATE INDEX idx_stavka_narudzbe_id_proizvod ON stavka_narudzbe(id_proizvod);
 
 
 
