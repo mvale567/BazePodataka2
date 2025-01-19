@@ -113,6 +113,52 @@ def show_prijevoznik():
 
     return render_template('nav-templates/prijevoznik.html', prijevoznik=prijevoznik)
 
+@app.route('/dodaj_prijevoznika_forma', methods=['GET'])
+def dodaj_prijevoznika_forma():
+    return render_template('nav-templates/dodaj_prijevoznika.html')  # Render the form for adding a transporter.
+
+@app.route('/dodaj_prijevoznika', methods=['POST'])
+def dodaj_prijevoznika():
+    naziv = request.form['naziv']
+    adresa = request.form['adresa']
+    email = request.form['email']
+    telefon = request.form['telefon']
+    oib = request.form['oib']
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        INSERT INTO prijevoznik (naziv, adresa, email, telefon, oib)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (naziv, adresa, email, telefon, oib))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('show_prijevoznik'))
+
+
+
+
+@app.route('/izbrisi_prijevoznika_forma', methods=['GET'])
+def izbrisi_prijevoznika_forma():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT id FROM prijevoznik;')
+    prijevoznik = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/obrisi_prijevoznika.html', prijevoznik=prijevoznik)
+
+
+@app.route('/izbrisi_prijevoznika', methods=['POST'])
+def izbrisi_prijevoznik():
+    id_prijevoznik = request.form['id_prijevoznika']
+
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM prijevoznik WHERE id = %s", (id_prijevoznik,))
+    mysql.connection.commit()
+    cur.close()
+
+
+
 
 @app.route('/proizvod', methods=['GET'])
 def proizvod():
