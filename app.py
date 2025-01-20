@@ -375,7 +375,7 @@ def zahtjev_za_nabavu():
 @app.route('/berba', methods=['GET'])
 def berba():
     cur = mysql.connection.cursor()
-    cur.execute('SELECT v.naziv, b.godina_berbe, b.postotak_alkohola FROM berba b JOIN vino v ON v.id = b.id_vino;')
+    cur.execute('SELECT b.id, v.naziv, b.godina_berbe, b.postotak_alkohola FROM berba b JOIN vino v ON v.id = b.id_vino;')
     berba_lista = cur.fetchall()
     cur.close()
 
@@ -404,6 +404,52 @@ def dodaj_berbu():
     cur.close()
 
     return redirect(url_for('berba'))
+
+
+@app.route('/uredi_berbu_forma/<int:id>', methods=['GET'])
+def uredi_berbu_forma(id):
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT b.id, b.id_vino, b.godina_berbe, b.postotak_alkohola FROM berba b WHERE b.id = %s', (id,))
+    berba = cur.fetchone()
+    cur.execute('SELECT id, naziv FROM vino;')
+    vino_izbor = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/uredi_berbu_forma.html', berba=berba, vina=vino_izbor)
+
+
+@app.route('/uredi_berbu/<int:id>', methods=['POST'])
+def uredi_berbu(id):
+    id_vino = request.form['id_vino']
+    godina_berbe = int(request.form['godina_berbe'])
+    postotak_alkohola = request.form['postotak_alkohola']
+
+    cur = mysql.connection.cursor()
+    cur.execute('UPDATE berba SET id_vino = %s, godina_berbe = %s, postotak_alkohola = %s WHERE id = %s',
+                (id_vino, godina_berbe, postotak_alkohola, id))
+    mysql.connection.commit()
+    cur.close()
+
+    return redirect(url_for('berba'))
+
+@app.route('/uredi_berbu_str', methods=['GET'])
+def uredi_berbu_str():
+    cur = mysql.connection.cursor()
+    cur.execute('SELECT b.id, v.naziv, b.godina_berbe, b.postotak_alkohola FROM berba b JOIN vino v ON v.id = b.id_vino;')
+    berba_lista = cur.fetchall()
+    cur.close()
+
+    return render_template('nav-templates/uredi_berbu.html', berba=berba_lista)
+
+
+@app.route('/obrisi_berbu/<int:id>', methods=['POST'])
+def obrisi_berbu(id):
+    cur = mysql.connection.cursor()
+    cur.execute('DELETE FROM berba WHERE id = %s', (id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('uredi_berbu_str'))
+
 
 @app.route('/dodaj_repromaterijal_forma', methods=['GET'])
 def dodaj_repromaterijal_forma():

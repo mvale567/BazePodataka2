@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="hr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Uredi berbu</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+
+<body>
+
+    <form method="POST" action="{{ url_for('uredi_berbu', id=berba[0]) }}">
+        <label for="id_vino" class="label">Vino:</label>
+        <select name="id_vino" class="input-large" required>
+            {% for vino in vina %}
+            <option value="{{ vino[0] }}" {% if vino[0] == berba[1] %}selected{% endif %}>
+                {{ vino[1] }}
+            </option>
+            {% endfor %}
+        </select>
+        <br>
+
+        <label for="godina_berbe" class="label">Godina berbe:</label>
+        <input type="number" name="godina_berbe" value="{{ berba[2] }}" required>
+        <br>
+
+        <label for="postotak_alkohola" class="label">Postotak alkohola:</label>
+        <input type="number" step="0.01" name="postotak_alkohola" value="{{ berba[3] }}" required>
+        <br>
+
+        <button type="submit">Spremi promjene</button>
+    </form>
+
+</body>
+
+</html>

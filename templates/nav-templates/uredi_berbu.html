@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Naslovna</title>
+    <title>Uredi berbe</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
@@ -14,12 +14,7 @@
 
     <section class="tablica">
         <div class="tablica_container">
-        <h2 class="tablica_title">Berba</h2>
-            <div class="tablica_navbar">
-                <button class="tablica_nav-button" id="addBtn" data-url='/dodaj_berbu_forma'>Dodaj novu berbu</button>
-                <button class="tablica_nav-button" id="editBtn" data-url="/uredi_berbu_str">Uredi/Obriši</button>
-            </div>
-
+            <h2 class="tablica_title">Berba</h2>
             <table class="tablica_table">
                 <thead>
                     <tr>
@@ -27,6 +22,7 @@
                         <th>Naziv vina</th>
                         <th>Godina berbe</th>
                         <th>Postotak alkohola</th>
+                        <th> </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -36,10 +32,16 @@
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
                         <td>{{ row[3] }}</td>
+                        <td>
+                            <button class="tablica_nav-button" data-url="/uredi_berbu_forma/{{ row[0] }}">Uredi</button>
+                            <form method="POST" action="{{ url_for('obrisi_berbu', id=row[0]) }}" style="display:inline;">
+                                <button type="submit" class="tablica_nav-button">Obriši</button>
+                            </form>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4">Nema podataka.</td>
+                        <td colspan="5">Nema podataka.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
