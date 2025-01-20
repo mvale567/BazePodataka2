@@ -45,6 +45,7 @@ CREATE TABLE vino (
 );
 
 
+
 ----------------------------------------------- LAURA
 
 CREATE TABLE berba (
@@ -57,6 +58,7 @@ CREATE TABLE berba (
 );
 
 CREATE INDEX idx_berba_id_vino ON berba(id_vino);
+
 
 
 ----------------------------------------------- DAVOR
@@ -204,6 +206,7 @@ CREATE TABLE racun (
 );
 
 
+
 ----------------------------------------------- MARKO
 
 CREATE TABLE plan_proizvodnje (
@@ -286,7 +289,11 @@ DELIMITER ;
 
 ----------------------------------------------- LAURA
 
--- procedura za ažuriranje broja zaposlenika u tablici odjel
+-- Sljedeći elementi su definirani ovdje prije insert naredbi kako bi se izvrsili prilikom/nakon umetanja vrijednosti u tablice
+
+
+-- Procedura za ažuriranje broja zaposlenika u tablici odjel
+
 DELIMITER //
 CREATE PROCEDURE azuriraj_broj_zaposlenika(IN p_id_odjel INTEGER)
 BEGIN
@@ -297,7 +304,7 @@ END //
 DELIMITER ;
 
 
--- triggeri za insert, update i delete operacije na tablici odjel pozivaju proceduru azuriraj_broj_zaposlenika
+-- Triggeri nakon insert, update i delete operacija na tablici zaposlenik pozivaju proceduru azuriraj_broj_zaposlenika
 
 DELIMITER //
 CREATE TRIGGER ai_zaposlenik
@@ -308,6 +315,7 @@ BEGIN
 END //
 DELIMITER ;
 
+
 DELIMITER //
 CREATE TRIGGER ad_zaposlenik
 	AFTER DELETE ON zaposlenik
@@ -317,16 +325,16 @@ BEGIN
 END //
 DELIMITER ;
 
+
 DELIMITER //
 CREATE TRIGGER au_zaposlenik
 	AFTER UPDATE ON zaposlenik
     FOR EACH ROW
 BEGIN
-	-- ako je zaposlenik promijenio odjel
 	IF NEW.id_odjel != OLD.id_odjel THEN
 		CALL azuriraj_broj_zaposlenika(OLD.id_odjel);
 		CALL azuriraj_broj_zaposlenika(NEW.id_odjel);
-	ELSE  -- ako se promijenio status zaposlenika
+	ELSE  
 		IF NEW.status_zaposlenika != OLD.status_zaposlenika THEN
 			CALL azuriraj_broj_zaposlenika(NEW.id_odjel);
 		END IF;
@@ -335,7 +343,7 @@ END //
 DELIMITER ;
 
 
--- trigger za izracun iznos_stavke u stavke_narudzbe
+-- Trigger za izracun iznos_stavke u tablici stavka_narudzbe
 
 DELIMITER //
 CREATE TRIGGER bi_stavka_narudzbe
@@ -353,7 +361,7 @@ END //
 DELIMITER ; 
 
 
--- trigger za izracun ukupni_iznos u zahtjev_za_narudzbu
+-- Trigger za izracun ukupni_iznos neke narudzbe u tablici zahtjev_za_narudzbu nakon umetanja stavki u tablicu stavka_narudzbe
 
 DELIMITER //
 CREATE TRIGGER ai_stavka_narudzbe
@@ -370,6 +378,9 @@ BEGIN
 END //
 DELIMITER ;
 
+
+-- Tablica stanje_skladista_vina je implementacija materijaliziranog pogleda u MySQL-u
+-- prati količinu vina u skladištu vina tako što se automatski puni podacima pomocu procedure azuriraj_kolicinu_vina koju pozivaju after insert, delete i update triggeri nad tablicom skladiste_vino 
 
 CREATE TABLE stanje_skladista_vina (
 	id_berba INTEGER PRIMARY KEY,
@@ -443,6 +454,9 @@ END //
 DELIMITER ;
 
 
+-- Tablica stanje_skladista_proizvoda je implementacija materijaliziranog pogleda u MySQL-u
+-- prati količinu proizvoda u skladištu proizvoda tako što se automatski puni podacima pomocu procedure azuriraj_kolicinu_proizvoda koju pozivaju after insert, delete i update triggeri nad tablicom skladiste_proizvod
+
 CREATE TABLE stanje_skladista_proizvoda (
 	id_proizvod INTEGER PRIMARY KEY,
     kolicina INTEGER NOT NULL,
@@ -515,6 +529,9 @@ END //
 DELIMITER ;
 
 
+-- Tablica stanje_skladista_repromaterijala je implementacija materijaliziranog pogleda u MySQL-u
+-- prati količinu repromaterijala u skladištu repromaterijala tako što se automatski puni podacima pomocu procedure azuriraj_kolicinu_repromaterijala koju pozivaju after insert, delete i update triggeri nad tablicom skladiste_repromaterijal
+
 CREATE TABLE stanje_skladista_repromaterijala (
 	id_repromaterijal INTEGER PRIMARY KEY,
     kolicina INTEGER NOT NULL,
@@ -557,7 +574,6 @@ END //
 DELIMITER ;
 
 
-
 DELIMITER //
 CREATE TRIGGER ai_skladiste_repromaterijal
 	AFTER INSERT ON skladiste_repromaterijal
@@ -588,6 +604,9 @@ BEGIN
 END //
 DELIMITER ;
 
+
+
+-- Unos vrijednosti u tablice
 
 INSERT INTO kupac (naziv, oib, ime, prezime, adresa, email, telefon) 
 VALUES 
@@ -1260,7 +1279,6 @@ VALUES
 (5, '2023-08-25', 'ulaz', 14900, 'Skladište C'), 
 (7, '2023-09-01', 'ulaz', 14350, 'Skladište A'), 
 
-
 -- Izlazne transakcije za berbu 2023
 (1, '2023-09-28', 'izlaz', 4825.0, 'Skladište A'),
 (3, '2023-09-28', 'izlaz', 5010.0, 'Skladište B'),
@@ -1309,9 +1327,13 @@ VALUES
 
 
 
+
 -------------------------------------------------------- LAURA 
 
+-- Tablice skladiste_proizvod, skladiste_repromaterijal, zahtjev_za_nabavu i racun su popunjene sljedecim upitima umjesto rucno definiranim vrijednostima kako bi se podaci lakse uskladili s ostalim tablicama 
 
+
+-- Proizvodi su nakon zavrsetka punjenja boca isti dan usli u skladiste proizvoda, a iz skladista su izasli 7 dana nakon datuma zahtjeva za narudzbu koji su imali status 'Spremna za isporuku', 'Poslana' ili 'Završena'
 INSERT INTO skladiste_proizvod (id_proizvod, datum, tip_transakcije, kolicina, lokacija)
 SELECT id_proizvod, zavrsetak_punjenja AS datum, 'ulaz' AS tip_transakcije, kolicina, 'Skladište E' AS lokacija
 	FROM punjenje
@@ -1322,6 +1344,16 @@ SELECT sn.id_proizvod, DATE_ADD(zzn.datum_zahtjeva, INTERVAL 7 DAY) AS datum, 'i
 	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena')
 	ORDER BY datum;
 
+
+/* Sve vrste repromaterijala osim kutija su usle u skladiste repromaterijala 2 tjedna prije pocetka punjenja proizvoda, a kolicina repromaterijala je postavljena na ukupnu kolicinu punjenih proizvoda 
+za koje je namijenjen repromaterijal nasumicno blago uvecanu s RAND() funkcijom s definiranim seed-om kako bi se kolicine razlicitih repromaterijala razlikovale, ali uvijek pri izvrsenju upita bile iste.
+Sve vrste repromaterijala osim kutija su izasle iz skladista na dan pocetka punjenja proizvoda (jer se tada iskoristi repromaterijal) u kolicini koja tocno odgovara kolicini odredenog proizvoda koji se puni 
+(odnos repromaterijala i proizvoda je 1:1 odnosno za jednu proizvod treba po 1 cep, 1 boca i 1 naljepnica).
+
+Kutije (id_repromaterijal 1, 2 i 3) su usle u skladiste 10 dana nakon zavrsetka punjenja proizvoda, u kolicini koja odgovara ukupnoj kolicini nekog proizvoda podijeljenoj sa 6 (jer su sve kutije za 6 boca) i zaokruzenoj 
+na veci cijeli broj (jer ako broj proizvoda nije djeljiv sa 6 u neke kutije ce ici manje od 6 boca) i onda uvecanoj opet s RAND() funkcijom s definiranim seed-om.
+Kutije su izasle iz skladiste na dan izlaska proizvoda iz skladista proizvoda (jer tad proizvodi idu na utovar) i to u kolicini koja odgovara ukupnoj kolicini nekog proizvoda podijeljenoj sa 6 i zaokruzenoj na veci cijeli broj
+*/
 INSERT INTO skladiste_repromaterijal (id_repromaterijal, datum, tip_transakcije, kolicina, lokacija)
 SELECT rp.id_repromaterijal, DATE_SUB(p.pocetak_punjenja, INTERVAL 2 WEEK) AS datum, 'ulaz' AS tip_transakcije, SUM(p.kolicina) + ROUND(RAND(123) * 100 + 50) AS kolicina, 'Skladište D' AS lokacija
 	FROM punjenje p
@@ -1349,6 +1381,8 @@ UNION ALL
     ORDER BY datum, id_repromaterijal;
 
 
+-- Zahtjevi za nabavu su postavljeni prema unosima u tablicu skladiste_repromaterijal tj. 14 dana prije ulaza nekog repromaterijala u skladiste, za taj repromaterijal je napravljen zahtjev za nabavu u odgovarajucoj kolicini, 
+-- sa statusom 'dostavljeno', a id_zaposlenik je postavljen na jedan od 3 zaposlenika koji rade u odjelu nabave
 INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik)
 SELECT id_repromaterijal, kolicina, DATE_SUB(datum, INTERVAL 14 DAY) AS datum_zahtjeva, 'dostavljeno' AS status_nabave,
 CASE 
@@ -1359,12 +1393,16 @@ END AS id_zaposlenik
 	FROM skladiste_repromaterijal
 	WHERE tip_transakcije = 'ulaz';
 
+
+-- Racuni su uneseni za sve zahtjeve za narudzbu sa statusom 'Spremna za isporuku', 'Poslana' ili 'Završena', s datumom 3 dana nakon datuma zahtjeva za narudzbu i id_zaposlenikom postavljenim na jedinog zaposlenika u racunovodstvu
 INSERT INTO racun (id_zaposlenik, id_zahtjev_za_narudzbu, datum_racuna)
 SELECT 16 AS id_zaposlenik, zzn.id AS id_zahtjev_za_narudzbu, DATE_ADD(zzn.datum_zahtjeva, INTERVAL 3 DAY) AS datum_racuna
 	FROM zahtjev_za_narudzbu zzn
 	WHERE zzn.status_narudzbe IN ('Spremna za isporuku', 'Poslana', 'Završena');
 
 
+-- Tablica kvartalni_pregled_prodaje je također implementacija materijaliziranog pogleda u MySQL-u, ali ovog puta nije realizirana triggerima nego dvjema procedurama: azuriraj_prodane_proizvode i azuriraj_prodaju
+-- Kao primary key je postavljena kombinacija id_proizvod i kvartal, sto osigurava da svaka kombinacija proizvoda i kvartala bude jedinstvena u tablici.
 CREATE TABLE kvartalni_pregled_prodaje (
 	id_proizvod INTEGER,
     kolicina INTEGER NOT NULL,
@@ -1374,6 +1412,9 @@ CREATE TABLE kvartalni_pregled_prodaje (
     FOREIGN KEY (id_proizvod) REFERENCES proizvod(id)
 );
 
+
+-- Procedura azuriraj_prodane_proizvode prima atribute tablice kvartalni_pregled_prodaje kao parametre i provjerava postoji li odredena kombinacija id_proizvoda i kvartala vec u tablici. 
+-- Ako takva kombinacija ne postoji, vrsi se insert vrijednosti parametara u tablicu, a ako postoji, azuriraju se vrijednosti za kolicinu i ukupni_iznos za tu kombinaciju id_proizvoda i kvartala.
 
 DELIMITER //
 CREATE PROCEDURE azuriraj_prodane_proizvode(IN p_id_proizvod INTEGER, IN p_kolicina INTEGER, IN p_ukupni_iznos DECIMAL(10,2), p_kvartal VARCHAR(20))
@@ -1389,6 +1430,12 @@ BEGIN
 END //
 DELIMITER ;
 
+
+/* Procedura azuriraj_prodaju pomocu kursora i loop petlje iterira kroz id_proizvod, kolicinu i iznos_stavke u tablici stavka_narudzbe 
+za zahtjeve za narudzbu za koje je racun izdan izmedu pocetnog i zavrsnog datuma koji se predaju kao parametri proceduri.
+Prije iteriranja vrsi se validacija predanih datuma i procedura signalizira odgovarajucu gresku ako neki uvjet nije zadovoljen. Ako su datumi ispravno uneseni prema njima se odredi kvartal (npr. Q4 2024) i spremi u varijablu var_kvartal.
+Nakon sto kursor dohvati svaki redak koji nije prazan poziva se procedura azuriraj_prodane_proizvode kojoj se predaju varijable var_id_proizvod, var_kolicina, var_ukupni_iznos i var_kvartal.
+Kad kursor pokaze na prvi prazan redak CONTINUE HANDLER postavlja handler_broj na 1, zbog cega zavrsava petlja.*/
 
 DELIMITER //
 CREATE PROCEDURE azuriraj_prodaju(IN p_pocetni_datum DATE, IN p_zavrsni_datum DATE)
@@ -1455,6 +1502,13 @@ END //
 DELIMITER ;
 
 
+/* Tablica kvartalni_pregled_prodaje je zamišljena kao kvartalni izvještaj o prodaji s podacima o prodanoj kolicini i zaradenom iznosu za svaki proizvod. Izvjestaj ce se generirati putem eventa kvartalni_izvjestaj koji poziva
+proceduru azuriraj_prodaju s argumentima CURDATE() - INTERVAL 3 MONTH i CURDATE() - INTERVAL 1 DAY. Argumenti su tako postavljeni jer event pocinje 01.04. i ponavlja se svaka 3 mjeseca pa se na taj nacin dobivaju datumi koji 
+tocno odgovaraju proteklom kvartalu (npr. kad se event prvi put aktivira 01.04. proceduri ce biti predani (trenutni datum - 3 mjeseca = 01.01.) i (trenutni datum - 1 dan = 31.03.), sto odgovara pocetnom i zavrsnom datumu Q1 2025).
+Nisam postavila ikakve triggere u slucaju izmjene podataka u tablici stavka_narudzbe jer je predvideno da se nakon izvrsavanja eventa podaci za protekli kvartal vise ne mijenjaju.
+
+Rucno sam pozvala proceduru s datumima za kvartal Q4 2024 kako tablica ne bi bila prazna.  */
+
 CALL azuriraj_prodaju(STR_TO_DATE('01.10.2024.', '%d.%m.%Y.'), STR_TO_DATE('31.12.2024.', '%d.%m.%Y.'));
 
 -- SELECT * FROM kvartalni_pregled_prodaje;
@@ -1467,6 +1521,10 @@ DO
 
 SHOW EVENTS;
 
+
+/* Predvideno je da se u tablicu transport prilikom unosa novog transporta ne unosi vrijednost atributa kolicina, nego da se nakon utovara svih narudzbi koje se prevoze tim transportom prvo u tablici zahtjev_za_narudzbu
+dodijeli odgovarajuci id_transport za sve utovarene narudzbe, a zatim da se poziva procedura izracunaj_kolicinu_transporta koja izracuna ukupnu kolicinu proizvoda u svim narudzbama za odredeni transport i unese ju u tablicu
+transport (osim ako id za taj transport nije dodijeljen niti jednoj narudzbi, onda signalizira gresku). */
 
 DELIMITER //
 CREATE PROCEDURE izracunaj_kolicinu_transporta(IN p_id_transport INTEGER)
@@ -1490,6 +1548,10 @@ END //
 DELIMITER ;
 
 
+-- Transakcija izvrsava gore opisani dio poslovnog procesa - unos novog transporta, dodjeljivanje id_transporta narudzbama koje su utovarene u taj transport, promjena statusa tih narudzbi u 'Poslana' i na kraju 
+-- poziv procedure izracunaj_kolicinu_transporta za izracun kolicine proizvoda koja se prevozi tim transportom
+
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 START TRANSACTION;
 
 INSERT INTO transport (id_prijevoznik, registracija, ime_vozaca, datum_polaska, status_transporta) 
@@ -1505,6 +1567,8 @@ CALL izracunaj_kolicinu_transporta(@novi_transport);
 
 COMMIT;
 
+
+-- Trigger koji brise stavke s odgovarajucim id_zahtjev_za_narudzbu iz tablice stavka_narudzbe ako je status neke narudzbe postavljen na 'Otkazana' u tablici zahtjev_za_narudzbu
 
 DELIMITER //
 CREATE TRIGGER au_zahtjev_za_narudzbu_otkazana
@@ -1525,6 +1589,10 @@ UPDATE zahtjev_za_narudzbu
     WHERE id = 27;
 */
 
+
+-- U tablici transport je datum_dolaska prvobitno postavljen na NULL dok se isporuka ne dostavi, kad se isporuka dostavi se azurira tablica transport tj. dodaje datum_dolaska.
+-- Ovaj trigger signalizira gresku ako je datum_dolaska postavljen na raniji datum od datum_polaska, a ako je validan datum tj. vise nije NULL, onda postavlja status transporta na 'Obavljen'
+
 DELIMITER //
 CREATE TRIGGER bu_transport_datum_dolaska
 	BEFORE UPDATE ON transport
@@ -1540,9 +1608,12 @@ END //
 DELIMITER ;
 
 /* provjera
--- SELECT * FROM transport;
--- UPDATE transport SET datum_dolaska = '2022-05-20' WHERE id = 20;
+SELECT * FROM transport;
+UPDATE transport SET datum_dolaska = '2022-05-20' WHERE id = 20;
 */
+
+
+-- Trigger koji u tablici zahtjev_za_narudzbu azurira status_narudzbe s odgovarajucim id_transport na 'Završena' nakon sto se azurira tablica transport i datum_dolaska postavi na validan datum 
 
 DELIMITER //
 CREATE TRIGGER au_transport_datum_dolaska
@@ -1571,7 +1642,6 @@ UPDATE transport
 
 
 
-
 -- Funkcija koja racuna zbroj iznosa svih zavrsenih narudzbi koje je neki zaposlenik obradio
 
 DELIMITER //
@@ -1593,7 +1663,7 @@ DELIMITER ;
 
 
 
--- Upit – koji zaposlenik prodaje je obradio narudzbe s najvecim sveukupnim iznosom 
+-- Upit – koji zaposlenik prodaje je obradio narudzbe s najvecim sveukupnim iznosom (upit s pozivom funkcije ukupan_iznos_zaposlenik)
 
 SELECT z.id, z.ime, z.prezime, o.naziv AS odjel, ukupan_iznos_zaposlenik(z.id) AS zbroj_iznosa_obradenih_narudzbi
 	FROM zaposlenik z
@@ -1673,7 +1743,6 @@ SELECT r.id AS id_racun, k.naziv AS kupac, r.datum_racuna, CONCAT(v.naziv, ' ', 
 
 
 
-
 -- Upit – 5 najvise prodavanih proizvoda (gledajući narudzbe za koje je izdan racun)
 
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, SUM(sn.kolicina) AS ukupno_prodano 
@@ -1715,7 +1784,8 @@ DELIMITER ;
 -- SELECT postotak_proizvoda(11);
 
 
--- Pogled - prikaz proizvoda, njihove ukupne prodane količine, zarade i postotka u prodaji koristeći funkciju
+
+-- Pogled - prikaz proizvoda, njihove ukupne prodane količine, zarade i postotka u prodaji koristeći funkciju postotak_proizvoda
 
 CREATE VIEW proizvod_prodaja AS
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, SUM(sn.kolicina) AS ukupno_prodano, p.cijena * SUM(sn.kolicina) AS ukupna_zarada, postotak_proizvoda(p.id) AS postotak_prodaje
@@ -1730,6 +1800,7 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, S
 -- SELECT * FROM proizvod_prodaja;
 
 
+
 -- Upit - prikazi sve proizvode koji su prodani u ukupnoj kolicini vecoj od 1000
 
 SELECT proizvod, ukupno_prodano
@@ -1738,6 +1809,8 @@ SELECT proizvod, ukupno_prodano
     ORDER BY ukupno_prodano DESC;
     
 
+
+-- Procedura koja daje informaciju o broju narudzbi, najmanjem iznosu narudzbe, najvecem iznosu narudzbe i prosjecnom iznosu narudzbe u odredenom mjesecu neke godine
 
 DELIMITER //
 CREATE PROCEDURE analiziraj_narudzbe_po_mjesecu(IN p_mjesec INTEGER, IN p_godina INTEGER, OUT p_info_mjesec VARCHAR(200))
@@ -1775,8 +1848,8 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod
 	);
 
 
--- Procedura – prikazi sve narudzbe koje sadrze neki proizvod
 
+-- Procedura koja u privremenoj tablici prikazuje sve narudzbe koje sadrze neki proizvod
 
 DELIMITER //
 CREATE PROCEDURE prikazi_narudzbe_za_proizvod(IN p_id_proizvod INTEGER)
@@ -1824,8 +1897,7 @@ DELIMITER ;
 
 
 
--- Funkcija – vraća koliko dugo je neki zaposlenik zaposlen u vinariji
-
+-- Funkcija koja vraća koliko dugo je neki zaposlenik zaposlen u vinariji
 
 DELIMITER //
 CREATE FUNCTION radni_staz(p_id_zaposlenik INTEGER) RETURNS VARCHAR(100)
@@ -1848,7 +1920,8 @@ DELIMITER ;
 -- SELECT radni_staz(1);
 
 
--- Upit - prikaz zaposlenik s aktivnim statusom uz odjel i njihov radni staž 
+
+-- Upit - prikaz zaposlenika s aktivnim statusom uz odjel i njihov radni staž (upit s pozivom funkcije radni_staz)
 
 SELECT CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, o.naziv AS odjel, radni_staz(z.id) AS radni_staz
 	FROM zaposlenik z
@@ -1857,9 +1930,7 @@ SELECT CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, o.naziv AS odjel, radni_staz
 
 
 
--- Funkcija – vraća broj transporta s registracijskim tablicama nekog grada 
-
-
+-- Funkcija koja vraća broj transporta s registracijskim tablicama nekog grada 
 
 DELIMITER //
 CREATE FUNCTION tablice_grad(p_tablice CHAR(2)) RETURNS INTEGER
@@ -1879,6 +1950,7 @@ DELIMITER ;
 -- SELECT * FROM transport;
 
 
+
 -- Pogled – sve narudzbe koje nisu poslane/zavrsene/otkazane, a od datuma zahtjeva je proslo vise od tjedan dana
 
 CREATE VIEW zaostale_narudzbe AS
@@ -1889,8 +1961,11 @@ SELECT zzn.id, k.naziv AS kupac, CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, zz
     WHERE status_narudzbe NOT IN ('Završena', 'Poslana', 'Otkazana')
 		AND DATEDIFF(CURDATE(), datum_zahtjeva) > 7;
 
+-- SELECT * FROM zaostale_narudzbe;
 
--- Funkcija – broj zaposlenih u nekom odjelu u zadnjih godinu dana
+
+
+-- Funkcija koja vraća broj zaposlenih u nekom odjelu u zadnjih godinu dana
 
 DELIMITER //
 CREATE FUNCTION zaposleni_odjel(p_id_odjel INTEGER) RETURNS INTEGER
@@ -1911,7 +1986,7 @@ DELIMITER ;
 
 
 
--- Upit - odjel(i) s najviše zaposlenih u zadnjih godinu dana
+-- Upit - odjel(i) s najviše zaposlenih u zadnjih godinu dana (upit s pozivom funkcije zaposleni_odjel)
 
 SELECT id, naziv, zaposleni_odjel(id) AS zaposleni_unutar_godinu_dana
 	FROM odjel o
@@ -1919,9 +1994,7 @@ SELECT id, naziv, zaposleni_odjel(id) AS zaposleni_unutar_godinu_dana
 
 
 
-
-
--- Funkcija – vraća broj kupaca i zaposlenika iz nekog mjesta
+-- Funkcija koja vraća broj kupaca i zaposlenika iz nekog mjesta
 
 DELIMITER //
 CREATE FUNCTION broj_mjesta(p_mjesto VARCHAR(20)) RETURNS INTEGER
@@ -1944,7 +2017,8 @@ DELIMITER ;
 -- SELECT broj_mjesta('Dubrovnik');
 
 
--- Upit - prikazi sve kupce i broj njihovih racuna, pritom prikazati samo one kupce koji imaju barem dva racuna
+
+-- Upit - prikaz sve kupaca za koje su izdana barem dva racuna uz broj njihovih racuna
 
 SELECT k.*, COUNT(*) AS broj_racuna
 	FROM kupac k
@@ -1955,7 +2029,7 @@ SELECT k.*, COUNT(*) AS broj_racuna
 
 
 
--- Procedura za novi zahtjev za nabavu
+-- Procedura za novi zahtjev za nabavu - zahtjev se odobrava samo ako je na skladistu u tom trenu kolicina repromaterijala za koji se podnosi zahtjev manja od 300
 
 DELIMITER //
 CREATE PROCEDURE dodaj_novu_nabavu(IN p_id_repromaterijal INTEGER, p_kolicina INTEGER, IN p_id_zaposlenik INTEGER)
@@ -1968,7 +2042,7 @@ BEGIN
         
 	IF var_trenutna_kolicina IS NULL THEN
 		SIGNAL SQLSTATE '45014' SET MESSAGE_TEXT = 'Repromaterijal ne postoji u skladištu!';
-	ELSEIF var_trenutna_kolicina > 300 THEN
+	ELSEIF var_trenutna_kolicina >= 300 THEN
 		INSERT INTO zahtjev_za_nabavu (id_repromaterijal, kolicina, datum_zahtjeva, status_nabave, id_zaposlenik) VALUES (p_id_repromaterijal, p_kolicina, CURDATE(), 'odbijeno', p_id_zaposlenik);
         SIGNAL SQLSTATE '45015' SET MESSAGE_TEXT = 'Stanje repromaterijala na skladištu je dostatno, zahtjev za nabavu je odbijen!';
 	ELSE
@@ -1979,6 +2053,7 @@ DELIMITER ;
 
 /* provjera
 CALL dodaj_novu_nabavu(37, 100, 4);
+CALL dodaj_novu_nabavu(34, 100, 4);
 
 SELECT * FROM stanje_skladista_repromaterijala;
 SELECT * FROM zahtjev_za_nabavu;
@@ -1986,7 +2061,10 @@ SELECT * FROM zahtjev_za_nabavu;
 
 
 
--- procedure i pogledi za upotrebu u aplikaciji
+/* Procedure i pogledi za upotrebu u aplikaciji
+
+Za prikaz vecine svojih tablica sam napravila poglede kako bi na aplikaciji bio razumljivi prikaz podataka umjesto samo puno brojeva (npr. tablica repromaterijal_proizvod sadrzi samo id, id_proizvod i id_repromaterijal, 
+a pogled repromaterijal_po_proizvodu koji se prikazuje na aplikaciji sadrzi naziv proizvoda i opis repromaterijala */
 
 
 DELIMITER //
@@ -2006,12 +2084,16 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, r
 	JOIN repromaterijal_proizvod rp ON rp.id_proizvod = p.id
     JOIN repromaterijal r ON rp.id_repromaterijal = r.id;
     
+-- SELECT * FROM repromaterijal_po_proizvodu;
+
 
 CREATE VIEW vino_skladiste AS 
 SELECT CONCAT(v.naziv,' ', b.godina_berbe) AS vino, ssv.kolicina
 	FROM vino v
     JOIN berba b ON v.id = b.id_vino
     JOIN stanje_skladista_vina ssv ON ssv.id_berba = b.id;
+
+-- SELECT * FROM vino_skladiste;
 
 
 CREATE VIEW proizvod_skladiste AS
@@ -2021,11 +2103,15 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, s
     JOIN proizvod p ON p.id_berba = b.id
     JOIN stanje_skladista_proizvoda ssp ON p.id = ssp.id_proizvod;
 
+-- SELECT * FROM proizvod_skladiste;
+
 
 CREATE VIEW repromaterijal_skladiste AS
 SELECT r.opis AS repromaterijal, ssr.kolicina
 	FROM repromaterijal r
     JOIN stanje_skladista_repromaterijala ssr ON r.id = ssr.id_repromaterijal;
+
+-- SELECT * FROM repromaterijal_skladiste;
 
 
 CREATE VIEW kvartalna_prodaja AS
@@ -2035,6 +2121,9 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, k
     JOIN proizvod p ON p.id_berba = b.id
     JOIN kvartalni_pregled_prodaje kpp ON p.id = kpp.id_proizvod
     ORDER BY kpp.ukupni_iznos DESC;
+    
+-- SELECT * FROM kvartalna_prodaja;
+
 
 CREATE VIEW punjenje_pogled AS
 SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, pu.oznaka_serije, pu.pocetak_punjenja, pu.zavrsetak_punjenja, pu.kolicina 
@@ -2044,6 +2133,8 @@ SELECT CONCAT(v.naziv, ' ', b.godina_berbe, ' ', p.volumen, ' L') AS proizvod, p
     JOIN punjenje pu ON p.id = pu.id_proizvod
     ORDER BY pu.pocetak_punjenja ASC, pu.oznaka_serije ASC;
  
+-- SELECT * FROM punjenje_pogled;
+ 
  
 CREATE VIEW narudzbe AS
 SELECT zzn.id, k.naziv AS kupac, CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, (CASE WHEN zzn.id_transport IS NULL THEN 'N/A' ELSE zzn.id_transport END) AS id_transport, zzn.datum_zahtjeva, zzn.ukupni_iznos, zzn.status_narudzbe
@@ -2051,6 +2142,8 @@ SELECT zzn.id, k.naziv AS kupac, CONCAT(z.ime, ' ', z.prezime) AS zaposlenik, (C
     JOIN zaposlenik z ON z.id = zzn.id_zaposlenik
     JOIN kupac k ON k.id = zzn.id_kupac
     ORDER BY zzn.id;
+  
+-- SELECT * FROM narudzbe; 
   
   
 CREATE VIEW stavke AS
@@ -2060,7 +2153,12 @@ SELECT sn.id, sn.id_zahtjev_za_narudzbu, CONCAT(v.naziv, ' ', b.godina_berbe, ' 
     JOIN berba b ON b.id = p.id_berba
     JOIN vino v ON v.id = b.id_vino
     ORDER BY sn.id;
-    
+  
+-- SELECT * FROM stavke; 
+
+
+
+-- Stvaranje uloge zaposlenik_prodaje i dodjeljivanje dopuštenja za tablice, poglede, procedure i funkcije kojima bi ta uloga trebala imati pristup
 
 DROP ROLE IF EXISTS zaposlenik_prodaje;
 DROP USER IF EXISTS 'Prodavac1'@'localhost';
@@ -2088,6 +2186,8 @@ GRANT EXECUTE ON PROCEDURE vinarija.prikazi_narudzbe_za_proizvod TO zaposlenik_p
 GRANT EXECUTE ON FUNCTION vinarija.postotak_proizvoda TO zaposlenik_prodaje;
 
 
+-- Dodjeljivanje uloge zaposlenik_prodaje novom korisniku 'Prodavac1'@'localhost'
+
 CREATE USER 'Prodavac1'@'localhost' IDENTIFIED BY 'Prodavac1_password';
 
 GRANT zaposlenik_prodaje TO 'Prodavac1'@'localhost';
@@ -2095,6 +2195,12 @@ SET DEFAULT ROLE zaposlenik_prodaje TO 'Prodavac1'@'localhost';
 
 -- SHOW GRANTS FOR 'Prodavac1'@'localhost';
 -- SHOW GRANTS FOR zaposlenik_prodaje;
+
+
+
+
+
+
 
 
 
@@ -2868,7 +2974,7 @@ CREATE TRIGGER prije_transport_update
 BEFORE UPDATE ON transport
 FOR EACH ROW
 BEGIN
-    IF NEW.status_transporta = 'Obavljen' AND (NEW.datum_dolaska IS NULL OR NEW.datum_dolaska = '') THEN
+    IF NEW.status_transporta = 'Obavljen' AND NEW.datum_dolaska IS NULL THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Unesi datum_dolaska.';
     END IF;
