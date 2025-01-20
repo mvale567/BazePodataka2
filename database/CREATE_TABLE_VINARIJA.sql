@@ -2768,6 +2768,31 @@ GROUP BY
 
 
 
+DROP ROLE IF EXISTS 'knjigovodstvo';
+DROP USER IF EXISTS 'djelatnik_knjigovodstvo'@'localhost';
+
+
+CREATE ROLE 'knjigovodstvo';
+GRANT SELECT ON vinarija.zaposlenik TO 'knjigovodstvo';
+GRANT SELECT ON vinarija.odjel TO 'knjigovodstvo';
+GRANT SELECT, UPDATE ON vinarija.kupac TO 'knjigovodstvo';
+GRANT SELECT, INSERT, UPDATE ON vinarija.racun TO 'knjigovodstvo';
+GRANT SELECT, INSERT, UPDATE ON vinarija.dobavljac TO 'knjigovodstvo';
+GRANT SELECT ON vinarija.proizvod TO 'knjigovodstvo';
+GRANT SELECT ON vinarija.prijevoznik TO 'knjigovodstvo';
+GRANT SELECT ON vinarija.repromaterijal TO 'knjigovodstvo';
+GRANT SELECT ON vinarija.transport TO 'knjigovodstvo';
+
+
+CREATE USER 'djelatnik_knjigovodstvo'@'localhost' IDENTIFIED BY 'SlozenaLozinka123!';
+
+GRANT 'knjigovodstvo' TO 'djelatnik_knjigovodstvo'@'localhost';
+SET DEFAULT ROLE 'knjigovodstvo' TO 'djelatnik_knjigovodstvo'@'localhost';
+
+ -- SHOW GRANTS FOR 'djelatnik_knjigovodstvo'@'localhost';
+ -- SHOW GRANTS FOR 'knjigovodstvo';
+
+
 
 
 
@@ -2845,7 +2870,7 @@ DELIMITER ;
 
 • Triggers
 
---Automatski unos datuma zapošljavanja novog zaposlenika
+-- Automatski unos datuma zapošljavanja novog zaposlenika
 
 DELIMITER //
 
@@ -2860,8 +2885,18 @@ END//
 
 DELIMITER ;
 
-DELIMITER ;
+-- Triger za brisanje prijevoznika 
 
+DELIMITER //
+CREATE TRIGGER before_prijevoznik_delete
+BEFORE DELETE ON prijevoznik
+FOR EACH ROW
+BEGIN
+    IF EXISTS (SELECT 1 FROM transport WHERE id_prijevoznik = OLD.id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Nije moguće obrisati prijevoznika koji ima povezane transporte.';
+    END IF;
+END//
+DELIMITER ;
 
 
 -- Upiti
@@ -2886,15 +2921,7 @@ WHERE adresa NOT LIKE '%Zagreb%';
 
 -- Transakcije
 
--- Brisanje zaposlenika i ažuriranje broja zaposlenika u odjelu
 
-START TRANSACTION;
-
-DELETE FROM zaposlenik WHERE id = 8;
-
-UPDATE odjel SET broj_zaposlenika = broj_zaposlenika - 1 WHERE id = 2;
-
-COMMIT;
 
 -- Ažuriranje podataka o kupcu i zaposleniku
 

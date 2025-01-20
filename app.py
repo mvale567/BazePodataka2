@@ -270,7 +270,7 @@ def vino():
 
 
 @app.route('/kupac', methods=['GET'])
-def show_kupac():
+def kupac():
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM kupac;")
     kupac = cur.fetchall()
@@ -283,7 +283,7 @@ def show_kupac():
 
 
 @app.route('/prijevoznik', methods=['GET'])
-def show_prijevoznik():
+def prijevoznik():
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM prijevoznik;")
     prijevoznik = cur.fetchall()
@@ -735,21 +735,6 @@ def index():
 def home():
     return render_template('home.html')
 
-# @app.route('/zaposlenik')
-# def zaposlenik():
-#     return render_template('nav-templates/zaposlenik.html')
-
-#@app.route('/dobavljac')
-#def dobavljac():
-    #return render_template('nav-templates/dobavljac.html')
-
-@app.route('/kupac')
-def kupac():
-    return render_template('nav-templates/kupac.html')
-
-@app.route('/prijevoznik')
-def prijevoznik():
-    return render_template('nav-templates/prijevoznik.html')
 
 
 if __name__ == "__main__":
