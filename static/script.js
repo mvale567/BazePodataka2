@@ -20,22 +20,12 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Pozivanje funkcije za oba dropdowna
+  // Pozivanje funkcije za dropdown izbornike
   aktiviraj_dropdown("zahtjeviBtn"); // Za zahtjeve
   aktiviraj_dropdown("skladistaBtn"); // Za skladišta
   aktiviraj_dropdown("racunovodstvoBtn"); // Za racunovodstvo
 });
 
-// zaposlenik sortiranje, dropdown
-document.addEventListener("DOMContentLoaded", function () {
-  const sortBtn = document.getElementById("sortBtn");
-  const dropdown = document.querySelector(".dropdown");
-
-  sortBtn.addEventListener("click", () => {
-    // Toggle klasu 'active' za dropdown
-    dropdown.classList.toggle("active");
-  });
-});
 
 // linkanje preko gumbova sa data-url=''
 document.addEventListener("DOMContentLoaded", function () {

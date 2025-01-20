@@ -54,7 +54,8 @@ CREATE TABLE berba (
     godina_berbe INTEGER NOT NULL,
     postotak_alkohola DECIMAL(5, 2) NOT NULL,
     FOREIGN KEY (id_vino) REFERENCES vino(id),
-    CONSTRAINT berba_postotak_alkohola_ck CHECK (postotak_alkohola BETWEEN 5 AND 25)
+    CONSTRAINT berba_postotak_alkohola_ck CHECK (postotak_alkohola BETWEEN 5 AND 25),
+    CONSTRAINT berba_godina_berbe_ck CHECK (godina_berbe > 2000)
 );
 
 CREATE INDEX idx_berba_id_vino ON berba(id_vino);
@@ -2339,7 +2340,7 @@ END //
 DELIMITER ;
 
 -- Test: 
-CALL dodaj_novo_vino('Chardonnay', 'bijelo', 'Chardonnay');
+-- CALL dodaj_novo_vino('Chardonnay', 'bijelo', 'Chardonnay');
 
 -- Funkcije
 -- funkcija za vraćanje statusa narudžbe po ID-u
