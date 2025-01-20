@@ -25,16 +25,15 @@
                     <div class="row mb-3">
                         <label for="Naziv" class="col-sm-2 col-form-label">Naziv</label>
                         <div class="col-sm-10">
-                            <input type="text" class="form-control" id="id_odjel" name="id_odjel"
-                                value="{{ dobavljac[1] }}">
+                            <input type="text" class="form-control" id="naziv" name="naziv" value="{{ dobavljac[1] }}">
                         </div>
                     </div>
-                   
+
                     <div class="row mb-3">
                         <label for="adresa" class="col-sm-2 col-form-label">Adresa</label>
                         <div class="col-sm-10">
                             <input type="text" class="form-control" id="adresa" name="adresa"
-                                value="{{ dobavljac[4] }}">
+                                value="{{ dobavljac[2] }}">
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -47,15 +46,14 @@
                         <label for="telefon" class="col-sm-2 col-form-label">Telefon</label>
                         <div class="col-sm-10">
                             <input type="text" class="form-control" id="telefon" name="telefon"
-                                value="{{ dobavljac[6] }}">
+                                value="{{ dobavljac[3] }}">
                         </div>
                     </div>
-                    
+
                     <div class="row mb-3">
-                        <label for="lozinka" class="col-sm-2 col-form-label">OIB</label>
+                        <label for="oib" class="col-sm-2 col-form-label">OIB</label>
                         <div class="col-sm-10">
-                            <input type="number" class="form-control" id="lozinka" name="lozinka"
-                                value="{{ dobavljac[10] }}">
+                            <input type="number" class="form-control" id="oib" name="oib" value="{{ dobavljac[4] }}">
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary">Unesi</button>

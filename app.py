@@ -205,7 +205,7 @@ def edit_dobavljaca():
 def obrisi_dobavljaca(id):
     try:
         cur = mysql.connection.cursor()
-        cur.execute("DELETE FROM dobavljaca WHERE id = %s", [id])
+        cur.execute("DELETE FROM dobavljac WHERE id = %s", [id])
         mysql.connection.commit()
         cur.close()
 
@@ -214,6 +214,7 @@ def obrisi_dobavljaca(id):
     except Exception as e:
         print(f"Error: {e}")
         return redirect(url_for('edit_dobavljaca'))  
+    
 
 @app.route('/edit_dobavljaca_forma/<int:id>', methods=['GET'])
 def edit_dobavljaca_forma(id):
@@ -225,15 +226,13 @@ def edit_dobavljaca_forma(id):
     return render_template('nav-templates/edit_dobavljaca_forma.html', dobavljac=dobavljac)
 
 @app.route('/update_dobavljaca/<int:id>', methods=['POST'])
-def update_dobavljac(id):
-    naziv = request.form['id_odjel']
-    
+def update_dobavljaca(id):
+    naziv = request.form['naziv']
     adresa = request.form['adresa']
     email = request.form['email']
     telefon = request.form['telefon']
-    oib = request.form['datum_zaposlenja']
+    oib = request.form['oib']
     
-
     cur = mysql.connection.cursor()
     cur.execute("""
         UPDATE dobavljac
@@ -245,7 +244,7 @@ def update_dobavljac(id):
     cur.close()
 
     return redirect(url_for('dobavljac'))
-    
+
 
 
 @app.route('/repromaterijal', methods=['GET'])

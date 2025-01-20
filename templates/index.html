@@ -15,7 +15,7 @@
 
   <div class="main-container">
     <div class="inner-container">
-      <nav class="inner-nav">
+      <nav class="inner-nav" style="overflow-y: auto ;">
         <ul>
           <li>
             <a href="{{ url_for('zaposlenik') }}" target="outer-content-frame" class="nav-button"><i
@@ -68,15 +68,15 @@
             <a href="#" class="nav-button gumb" id="racunovodstvoBtn"><i class="fas fa-file-invoice"></i> Računovodstvo
               <i class="fas fa-chevron-down dropdown-icon"></i></a>
             <ul class="dropdown">
-                <li>
-                    <a href="{{ url_for('racun') }}" target="outer-content-frame" class="nav-button"><i
-                        class="fas fa-receipt"></i> Računi</a>
-                </li>
-                <li>
-                    <a href="{{ url_for('kvartalni_pregled_prodaje') }}" target="outer-content-frame" class="nav-button"><i
-                        class="fas fa-file-invoice-dollar"></i> Prodaja po kvartalu
-                    </a>
-                </li>
+              <li>
+                <a href="{{ url_for('racun') }}" target="outer-content-frame" class="nav-button"><i
+                    class="fas fa-receipt"></i> Računi</a>
+              </li>
+              <li>
+                <a href="{{ url_for('kvartalni_pregled_prodaje') }}" target="outer-content-frame" class="nav-button"><i
+                    class="fas fa-file-invoice-dollar"></i> Prodaja po kvartalu
+                </a>
+              </li>
             </ul>
           </li>
           <li>
@@ -133,5 +133,8 @@
 </body>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+
 
 </html>
