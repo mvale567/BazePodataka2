@@ -261,6 +261,10 @@ CREATE TABLE zahtjev_za_nabavu (
     FOREIGN KEY (id_zaposlenik) REFERENCES zaposlenik(id)
 );
 
+-- Vid, zahtjevi za repromaterijal, indeks
+CREATE INDEX idx_id_repromaterijal ON zahtjev_za_nabavu(id_repromaterijal);
+SELECT * FROM zahtjev_za_nabavu WHERE id_repromaterijal = 2;
+
 
 
 ----------------------------------------------- DAVOR
